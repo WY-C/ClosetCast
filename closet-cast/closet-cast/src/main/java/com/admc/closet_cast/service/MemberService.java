@@ -3,10 +3,7 @@ package com.admc.closet_cast.service;
 import com.admc.closet_cast.apiPayload.exception.handler.MemberHandler;
 import com.admc.closet_cast.apiPayload.form.status.ErrorStatus;
 import com.admc.closet_cast.config.JwtProvider;
-import com.admc.closet_cast.dto.SignInRequestDto;
-import com.admc.closet_cast.dto.SignInResponseDto;
-import com.admc.closet_cast.dto.SignUpRequestDto;
-import com.admc.closet_cast.dto.SignUpResponseDto;
+import com.admc.closet_cast.dto.*;
 import com.admc.closet_cast.entity.Member;
 import com.admc.closet_cast.entity.Tendency;
 import com.admc.closet_cast.repository.MemberRepository;
@@ -19,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -74,5 +72,20 @@ public class MemberService {
         String token = jwtProvider.createToken(member.getLoginId());
 
         return SignInResponseDto.of(String.valueOf(member.getId()), member.getName(), member.getLoginId(), token);
+    }
+
+    @Transactional(readOnly = true)
+    public List<MemberDto> findAllMember() {
+        List<Member> members = memberRepository.findAll();
+
+        return members.stream()
+                .map(member -> MemberDto.of(
+                        member.getId(),
+                        member.getName(),
+                        member.getLoginId(),
+                        member.getPreference(),
+                        member.getTendencies(),
+                        member.getClothes())
+                ).collect(Collectors.toList());
     }
 }
