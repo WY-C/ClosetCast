@@ -88,4 +88,13 @@ public class MemberService {
                         member.getClothes())
                 ).collect(Collectors.toList());
     }
+
+    @Transactional(readOnly = true)
+    public MemberDto findMemberById(Long memberId) {
+        Member member = memberRepository.findById(memberId).orElseThrow(
+                () -> new MemberHandler(ErrorStatus.MEMBER_NOT_FOUND)
+        );
+
+        return MemberDto.of(member.getId(), member.getName(), member.getLoginId(), member.getPreference(), member.getTendencies(), member.getClothes());
+    }
 }

@@ -30,4 +30,9 @@ public class MemberController {
     public ResponseEntity<ApiResponse<List<MemberDto>>> findAllMembers() {
         return ResponseEntity.ok(ApiResponse.onSuccess(memberService.findAllMember()));
     }
+
+    @GetMapping("/member/{memberId}")
+    public ResponseEntity<ApiResponse<MemberDto>> findMemberById(@PathVariable("memberId") Long memberId) {
+        return ResponseEntity.ok(ApiResponse.onSuccess(memberService.findMemberById(memberId)));
+    }
 }
