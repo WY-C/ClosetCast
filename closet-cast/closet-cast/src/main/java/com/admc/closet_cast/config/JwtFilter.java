@@ -4,7 +4,11 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.filter.OncePerRequestFilter;
+
+import java.util.List;
 
 @Configuration
 public class JwtFilter extends OncePerRequestFilter {
@@ -23,10 +27,11 @@ public class JwtFilter extends OncePerRequestFilter {
             String token = header.substring(7);
             if (jwtProvider.validateToken(token)) {
                 String loginId = jwtProvider.getLoginId(token);
-                // 필요하면 여기서 Authentication 객체 만들어 SecurityContext에 넣을 수 있음
+
+                UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(loginId, null, List.of());
+                SecurityContextHolder.getContext().setAuthentication(authentication);
             }
         }
-
         filterChain.doFilter(request, response);
     }
 }
