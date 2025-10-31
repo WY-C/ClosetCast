@@ -97,4 +97,15 @@ public class MemberService {
 
         return MemberDto.of(member.getId(), member.getName(), member.getLoginId(), member.getPreference(), member.getTendencies(), member.getClothes());
     }
+
+    @Transactional
+    public MemberDto deleteMemberById(Long memberId) {
+        Member member = memberRepository.findById(memberId).orElseThrow(
+                () -> new MemberHandler(ErrorStatus.MEMBER_NOT_FOUND)
+        );
+
+        memberRepository.deleteById(memberId);
+
+        return MemberDto.of(member.getId(), member.getName(), member.getLoginId(), member.getPreference(), member.getTendencies(), member.getClothes());
+    }
 }

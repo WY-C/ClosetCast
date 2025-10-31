@@ -26,13 +26,18 @@ public class MemberController {
         return ResponseEntity.ok(ApiResponse.onSuccess(memberService.signIn(signinDto)));
     }
 
-    @GetMapping("/member")
+    @GetMapping("/read")
     public ResponseEntity<ApiResponse<List<MemberDto>>> findAllMembers() {
         return ResponseEntity.ok(ApiResponse.onSuccess(memberService.findAllMember()));
     }
 
-    @GetMapping("/member/{memberId}")
+    @GetMapping("/read/{memberId}")
     public ResponseEntity<ApiResponse<MemberDto>> findMemberById(@PathVariable("memberId") Long memberId) {
         return ResponseEntity.ok(ApiResponse.onSuccess(memberService.findMemberById(memberId)));
+    }
+
+    @DeleteMapping("/delete/{memberId}")
+    public ResponseEntity<ApiResponse<MemberDto>> deleteMember(@PathVariable("memberId") Long memberId) {
+        return ResponseEntity.ok(ApiResponse.onSuccess(memberService.deleteMemberById(memberId)));
     }
 }
