@@ -1,10 +1,7 @@
 package com.admc.closet_cast.entity;
 
 import jakarta.persistence.*;
-import lombok.AccessLevel;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -26,14 +23,19 @@ public class Member extends BaseEntity{
     private String name;
 
     @Column(nullable = false)
+    @Setter
     private String password;
 
+    @Setter
     private String preference;
 
+    @Setter
     private List<Tendency> tendencies;
 
-    @OneToMany(mappedBy = "member", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<MemberToCloth> clothes;
+    @Setter
+    @ElementCollection(fetch = FetchType.LAZY)
+    @Enumerated(EnumType.STRING)
+    private List<Cloth> clothes;
 
     @Builder
     public Member(String name, String loginId, String password, String preference, List<Tendency> tendencies) {

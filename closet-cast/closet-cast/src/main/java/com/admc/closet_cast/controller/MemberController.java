@@ -36,6 +36,11 @@ public class MemberController {
         return ResponseEntity.ok(ApiResponse.onSuccess(memberService.findMemberById(memberId)));
     }
 
+    @PatchMapping("/update/{memberId}")
+    public ResponseEntity<ApiResponse<MemberUpdateResponseDto>> updateMember(@PathVariable("memberId") Long memberId, @RequestBody MemberUpdateRequestDto memberUpdateRequestDto) {
+        return ResponseEntity.ok(ApiResponse.onSuccess(memberService.updateMember(memberId, memberUpdateRequestDto)));
+    }
+
     @DeleteMapping("/delete/{memberId}")
     public ResponseEntity<ApiResponse<MemberDto>> deleteMember(@PathVariable("memberId") Long memberId) {
         return ResponseEntity.ok(ApiResponse.onSuccess(memberService.deleteMemberById(memberId)));
