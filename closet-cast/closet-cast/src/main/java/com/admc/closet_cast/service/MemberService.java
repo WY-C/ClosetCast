@@ -4,6 +4,7 @@ import com.admc.closet_cast.apiPayload.exception.handler.MemberHandler;
 import com.admc.closet_cast.apiPayload.form.status.ErrorStatus;
 import com.admc.closet_cast.config.JwtProvider;
 import com.admc.closet_cast.dto.*;
+import com.admc.closet_cast.entity.Cloth;
 import com.admc.closet_cast.entity.Member;
 import com.admc.closet_cast.entity.Tendency;
 import com.admc.closet_cast.repository.MemberRepository;
@@ -96,6 +97,38 @@ public class MemberService {
         );
 
         return MemberDto.of(member.getId(), member.getName(), member.getLoginId(), member.getPreference(), member.getTendencies(), member.getClothes());
+    }
+
+    @Transactional
+    public MemberUpdateResponseDto updateMember(Long memberId, MemberUpdateRequestDto requestDto) {
+        Member member = memberRepository.findById(memberId).orElseThrow(
+                () -> new MemberHandler(ErrorStatus.MEMBER_NOT_FOUND)
+        );
+
+        if (requestDto.password() != null) {
+            String encodedPassword = passwordEncoder.encode(requestDto.password());
+            member.setPassword(encodedPassword);
+        }
+        if (requestDto.preference() != null) {
+            member.setPreference(requestDto.preference());
+        }
+        if (requestDto.tendencies() != null) {
+            List<Tendency> tendencies = new ArrayList<>();
+
+            for (String tendency : requestDto.tendencies()) {
+                tendencies.add(tendencyMap.get(tendency));
+            }
+            member.setTendencies(tendencies);
+        }
+        if (requestDto.clothes() != null) {
+            List<Cloth> clothes = new ArrayList<>();
+            for (String cloth : requestDto.clothes()) {
+                clothes.add(Cloth.valueOf(cloth));
+            }
+            member.setClothes(clothes);
+        }
+
+        return MemberUpdateResponseDto.of(member.getId(), member.getPassword(), member.getPreference(), member.getTendencies(), member.getClothes());
     }
 
     @Transactional
