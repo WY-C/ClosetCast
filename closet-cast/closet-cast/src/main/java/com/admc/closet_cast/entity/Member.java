@@ -30,10 +30,22 @@ public class Member extends BaseEntity{
     private String preference;
 
     @Setter
+    @ElementCollection(fetch = FetchType.LAZY)
+    @CollectionTable(
+            name = "member_tendencies",
+            joinColumns = @JoinColumn(name = "member_id")
+    )
+    @Column(name = "tendency")
+    @Enumerated(EnumType.STRING)
     private List<Tendency> tendencies;
 
     @Setter
     @ElementCollection(fetch = FetchType.LAZY)
+    @CollectionTable(
+            name = "member_clothes",
+            joinColumns = @JoinColumn(name = "member_id")
+    )
+    @Column(name = "cloth")
     @Enumerated(EnumType.STRING)
     private List<Cloth> clothes;
 
