@@ -4,26 +4,35 @@ import com.admc.closet_cast.dto.DailyWeatherDto;
 import com.admc.closet_cast.service.WeatherService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.scheduling.annotation.EnableScheduling;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/weather")
+@EnableScheduling
 public class WeatherController {
 
     private final WeatherService weatherService;
+    private static final int NX = 55;
+    private static final int NY = 127;
 
+    @Scheduled(cron = "0 30 2,5,8,11,14,17,20,23 * * *", zone = "Asia/Seoul")
     @GetMapping("/get")
-    public ResponseEntity<List<DailyWeatherDto>> getWeather(
-            @RequestParam String date,
-            @RequestParam String time,
-            @RequestParam int nx,
-            @RequestParam int ny) {
-        return ResponseEntity.ok(weatherService.getForecast(date, time, nx, ny));
+    public ResponseEntity<List<DailyWeatherDto>> getWeather() {
+        // 현재 시각 기준 (예: 05:30이라면 time=0500)
+        LocalDateTime now = LocalDateTime.now().minusMinutes(30);
+
+        String date = now.format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+        String time = now.format(DateTimeFormatter.ofPattern("HHmm"));
+        return ResponseEntity.ok(weatherService.getForecast(date, time, NX, NY));
     }
 }

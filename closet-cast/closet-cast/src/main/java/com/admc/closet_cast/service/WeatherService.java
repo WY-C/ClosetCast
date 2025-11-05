@@ -2,24 +2,28 @@ package com.admc.closet_cast.service;
 
 import com.admc.closet_cast.dto.DailyWeatherDto;
 import com.admc.closet_cast.dto.HourlyWeatherDto;
+import com.admc.closet_cast.entity.HourlyWeather;
+import com.admc.closet_cast.entity.Weather;
+import com.admc.closet_cast.repository.WeatherRepository;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.util.*;
 
 @Service
+@RequiredArgsConstructor
 public class WeatherService {
-    private final WebClient webClient;
+    private final WebClient.Builder webClientBuilder;
+    private final WeatherRepository weatherRepository;
 
-    public WeatherService(WebClient.Builder webClientBuilder) {
-        this.webClient = webClientBuilder.baseUrl("https://apihub.kma.go.kr/api/typ02/openApi/VilageFcstInfoService_2.0").build();
-    }
-
+    @Transactional
     public List<DailyWeatherDto> getForecast(String baseDate, String baseTime, int nx, int ny) {
+        WebClient webClient = webClientBuilder.baseUrl("https://apihub.kma.go.kr/api/typ02/openApi/VilageFcstInfoService_2.0").build();
         String authKey = "iUT6NVMERleE-jVTBFZX_g";
         String uri = UriComponentsBuilder.fromPath("/getVilageFcst")
                 .queryParam("authKey", authKey)
@@ -38,7 +42,47 @@ public class WeatherService {
                 .bodyToMono(String.class)
                 .block();
 
-        return parseWeatherResponse(json);
+        List<DailyWeatherDto> result = parseWeatherResponse(json);
+        saveWeatherToDB(result);
+
+        return result;
+    }
+
+    @Transactional
+    public void saveWeatherToDB(List<DailyWeatherDto> result) {
+        for (DailyWeatherDto dailyWeatherDto : result) {
+            Weather weather = weatherRepository.findByDate(dailyWeatherDto.getDate())
+                    .orElseGet(Weather::new); // 없으면 새로 생성
+
+            weather.setDate(dailyWeatherDto.getDate());
+
+            // null이 아닐 때만 갱신
+            if (dailyWeatherDto.getTmx() != null) {
+                weather.setTmx(dailyWeatherDto.getTmx());
+            }
+            if (dailyWeatherDto.getTmn() != null) {
+                weather.setTmn(dailyWeatherDto.getTmn());
+            }
+
+            // 시간별 데이터가 있을 때만 갱신
+            if (dailyWeatherDto.getHourlyList() != null && !dailyWeatherDto.getHourlyList().isEmpty()) {
+                weather.getHourlyList().clear(); // 기존 시간대 데이터 초기화
+                for (HourlyWeatherDto hourDto : dailyWeatherDto.getHourlyList()) {
+                    HourlyWeather hourly = new HourlyWeather();
+
+                    if (hourDto.getFcstTime() != null)
+                        hourly.setFcstTime(hourDto.getFcstTime());
+                    if (hourDto.getTemperature() != null)
+                        hourly.setTemperature(hourDto.getTemperature());
+                    if (hourDto.getApparentTemp() != null)
+                        hourly.setApparentTemp(hourDto.getApparentTemp());
+
+                    weather.addHourly(hourly);
+                }
+            }
+
+            weatherRepository.save(weather);
+        }
     }
 
     private List<DailyWeatherDto> parseWeatherResponse(String json) {
