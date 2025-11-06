@@ -5,6 +5,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 import org.springframework.boot.autoconfigure.http.client.HttpClientAutoConfiguration;
 import org.springframework.boot.autoconfigure.web.client.RestClientAutoConfiguration;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 
 @SpringBootApplication(exclude = {
@@ -12,6 +13,7 @@ import org.springframework.boot.autoconfigure.web.client.RestClientAutoConfigura
         HttpClientAutoConfiguration.class
 })
 @EnableJpaAuditing
+@EnableScheduling
 public class ClosetCastApplication {
 
 	public static void main(String[] args) {
