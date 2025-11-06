@@ -1,10 +1,15 @@
 package com.admc.closet_cast.service;
 
 import com.admc.closet_cast.apiPayload.exception.handler.MemberHandler;
+import com.admc.closet_cast.apiPayload.exception.handler.WeatherHandler;
 import com.admc.closet_cast.apiPayload.form.status.ErrorStatus;
 import com.admc.closet_cast.dto.RecommendDto;
+import com.admc.closet_cast.entity.HourlyWeather;
 import com.admc.closet_cast.entity.Member;
+import com.admc.closet_cast.entity.Weather;
+import com.admc.closet_cast.repository.HourlyWeatherRepository;
 import com.admc.closet_cast.repository.MemberRepository;
+import com.admc.closet_cast.repository.WeatherRepository;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -18,6 +23,10 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
@@ -37,6 +46,7 @@ import java.util.Map;
 //    TOP BOTTOM
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class RecommendService {
 
     @Value("${openai.secret-key}")
@@ -44,16 +54,13 @@ public class RecommendService {
 
     private final ObjectMapper mapper = new ObjectMapper();
     private final MemberRepository memberRepository;
+    private final WeatherRepository weatherRepository;
+    private final HourlyWeatherRepository hourlyWeatherRepository;
 
     private static final String API_URL = "https://api.openai.com/v1/chat/completions";
 
     // 💡 RestTemplate은 생성자 주입(DI) 받는 것을 권장합니다. (하단 설명 참고)
     private final RestTemplate restTemplate = new RestTemplate();
-
-    // 생성자 (MemberRepository 주입)
-    public RecommendService(MemberRepository memberRepository) {
-        this.memberRepository = memberRepository;
-    }
 
     /**
      * GPT Chat API에 옷 추천 요청을 보냅니다.
@@ -69,10 +76,19 @@ public class RecommendService {
         String tendencies = member.getTendencies().toString(); // ex: "[추위 많이 탐]"
 
         // 날씨 정보 (임시)
-        int max_temp = 16;
-        int min_temp = 6;
-        int max_feel = 16;
-        int min_feel = 6;
+
+        LocalDateTime today = LocalDateTime.now();
+        Weather weather = weatherRepository.findByDate(today.format(DateTimeFormatter.ofPattern("yyyyMMdd"))).orElseThrow(
+                () -> new WeatherHandler(ErrorStatus.NO_DATA)
+        );
+        Double max_temp = weather.getTmx();
+        Double min_temp = weather.getTmn();
+
+//        Long weatherId = weather.getId();
+        List<HourlyWeather> hourlyWeathers = hourlyWeatherRepository.findByWeather(weather);
+
+        Double max_feel = hourlyWeathers.stream().mapToDouble(HourlyWeather::getTemperature).max().getAsDouble();
+        Double min_feel = hourlyWeathers.stream().mapToDouble(HourlyWeather::getTemperature).min().getAsDouble();
 
         // 2. GPT 프롬프트 엔지니어링 (가장 중요!)
         String systemPrompt = String.format(
@@ -85,7 +101,7 @@ public class RecommendService {
         );
 
         String userPrompt = String.format(
-                "오늘 최고기온 %d도, 최저기온 %d도, 체감 최고기온 %d도, 체감 최저기온 %d도야. " +
+                "오늘 최고기온 %f도, 최저기온 %f도, 체감 최고기온 %f도, 체감 최저기온 %f도야. " +
                         "내 패션 선호도는 '%s'이고, 내 성향은 '%s'이야. " +
                         "내가 가진 옷 중에서 (상의, 하의) 조합 하나만 추천해줘.",
                 max_temp, min_temp, max_feel, min_feel, preference, tendencies

@@ -17,7 +17,9 @@ public enum ErrorStatus implements BaseCode {
 
     MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "MEMBER4001", "해당 ID의 사용자가 없습니다."),
     DUPLICATED_ID(HttpStatus.MULTI_STATUS, "MEMBER4002", "이미 사용중인 ID입니다."),
-    INVALID_ID_OR_PASSWORD(HttpStatus.BAD_REQUEST, "MEMBER4003", "아이디 또는 비밀번호가 일치하지 않습니다.");
+    INVALID_ID_OR_PASSWORD(HttpStatus.BAD_REQUEST, "MEMBER4003", "아이디 또는 비밀번호가 일치하지 않습니다."),
+
+    NO_DATA(HttpStatus.NOT_FOUND, "WEATHER4001", "해당 날짜의 날씨 데이터가 없습니다.");
 
 
     private final HttpStatus status;
