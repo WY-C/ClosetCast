@@ -5,6 +5,7 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -25,6 +26,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -43,6 +45,8 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.closetcast.ui.theme.ClosetCastTheme
 import kotlinx.coroutines.launch
+import kotlin.random.Random
+
 
 
 class MainActivity : ComponentActivity() {
@@ -350,11 +354,7 @@ fun DailyForecastCard(dailyForecasts: List<DailyForecast>) {
     }
 }
 
-data class ClothingRecommendation(
-    val top: String,
-    val outer: String,
-    val bottom: String
-)
+data class ClothingRecommendation(val outer: String, val top: String, val bottom: String)
 
 @Composable
 fun ClothingRecommendationCard(recommendation: ClothingRecommendation) {
@@ -368,48 +368,146 @@ fun ClothingRecommendationCard(recommendation: ClothingRecommendation) {
             horizontalArrangement = Arrangement.SpaceEvenly,
             modifier = Modifier.fillMaxWidth()
         ) {
+            // 아우터 Card
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                // Placeholder for image
+                Text(text = "Outer", style = MaterialTheme.typography.titleMedium)
                 Box(
                     modifier = Modifier
                         .size(120.dp)
-                        .background(MaterialTheme.colorScheme.secondaryContainer, shape = CircleShape)
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(text = recommendation.top, style = MaterialTheme.typography.bodyLarge)
-            }
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                // Placeholder for image
-                Box(
-                    modifier = Modifier
-                        .size(120.dp)
-                        .background(MaterialTheme.colorScheme.secondaryContainer, shape = CircleShape)
-                )
+                        .background(MaterialTheme.colorScheme.secondaryContainer, shape = CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (recommendation.outer.lowercase() != "none") {
+                        Image(
+                            painter = painterResource(getImageResourceForClothingName(recommendation.outer)),
+                            contentDescription = recommendation.outer,
+                            modifier = Modifier.size(80.dp)
+                        )
+                    }
+                }
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(text = recommendation.outer, style = MaterialTheme.typography.bodyLarge)
             }
+            // 상의 Card
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(text = "Top", style = MaterialTheme.typography.titleMedium)
+                Box(
+                    modifier = Modifier
+                        .size(120.dp)
+                        .background(MaterialTheme.colorScheme.secondaryContainer, shape = CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (recommendation.top.lowercase() != "none") {
+                        Image(
+                            painter = painterResource(getImageResourceForClothingName(recommendation.outer)),
+                            contentDescription = recommendation.outer,
+                            modifier = Modifier.size(80.dp)
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(text = recommendation.top, style = MaterialTheme.typography.bodyLarge)
+            }
+
+            // 하의 Card (여기 추가)
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(text = "Bottom", style = MaterialTheme.typography.titleMedium)
+                Box(
+                    modifier = Modifier
+                        .size(120.dp)
+                        .background(MaterialTheme.colorScheme.secondaryContainer, shape = CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (recommendation.bottom.lowercase() != "none") {
+                        Image(
+                            painter = painterResource(getImageResourceForClothingName(recommendation.outer)),
+                            contentDescription = recommendation.outer,
+                            modifier = Modifier.size(80.dp)
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(text = recommendation.bottom, style = MaterialTheme.typography.bodyLarge)
+            }
         }
-        Spacer(modifier = Modifier.height(16.dp))
-        Text(text = "바지: ${recommendation.bottom}", style = MaterialTheme.typography.bodyLarge)
         Spacer(modifier = Modifier.height(24.dp))
         OutlinedButton(onClick = { /* TODO */ }) {
-            Text("다른 옷 종류 보기 >")
+            Text("다른 추천 보기")
         }
     }
 }
 
-fun getRecommendationForTemperature(temp: Int): ClothingRecommendation {
-    return when {
-        temp >= 28 -> ClothingRecommendation("short sleeve", "", "shorts")
-        temp >= 23 -> ClothingRecommendation("short sleeve", "", "cotton pants")
-        temp >= 20 -> ClothingRecommendation("long sleeve", "shirt", "cotton pants")
-        temp >= 17 -> ClothingRecommendation("long sleeve", "jacket", "jeans")
-        temp >= 12 -> ClothingRecommendation("sweater", "trench coat", "jeans")
-        temp >= 9 -> ClothingRecommendation("sweater", "coat", "jeans")
-        temp >= 5 -> ClothingRecommendation("hoodie", "Puffer Jacket", "jeans")
-        else -> ClothingRecommendation("hoodie", "Puffer Jacket", "cotton pants") // Assuming thick cotton pants
+fun getImageResourceForClothingName(name: String): Int {
+    return when (name.trim().lowercase()) {
+        "puffer jacket" -> R.drawable.puffer_coat
+        "coat" -> R.drawable.trench_coat
+        "fleece" -> R.drawable.fleece
+        "sweater" -> R.drawable.sweater
+        "hoodie" -> R.drawable.hoodie
+        "short sleeve" -> R.drawable.short_sleeves
+        "long sleeve" -> R.drawable.long_sleeves
+        "jeans" -> R.drawable.jeans
+        "cotton pants" -> R.drawable.trouser
+        "shorts" -> R.drawable.shorts
+        else -> R.drawable.default_clothing // 기본 이미지
     }
 }
+
+fun getRecommendationForTemperature(temp: Int): ClothingRecommendation {
+    val topList: List<String>
+    val outerList: List<String>
+    val bottomList: List<String>
+
+    when {
+        temp >= 28 -> {
+            outerList = listOf("None")
+            topList = listOf("Short sleeve", "Sleeveless")
+            bottomList = listOf("Shorts")
+        }
+        temp in 23..27 -> {
+            outerList = listOf("None")
+            topList = listOf("Short sleeve", "Shirt")
+            bottomList = listOf("Shorts", "Cotton pants")
+        }
+        temp in 20..22 -> {
+            outerList = listOf("Spring/Fall Jacket", "Blazer", "Cardigan", "Denim")
+            topList = listOf("Shirt", "Long sleeve", "Sweater")
+            bottomList = listOf("Jeans", "Cotton pants")
+        }
+        temp in 17..19 -> {
+            outerList = listOf("Sweatshirt", "Hoodie")
+            topList = listOf("Shirt", "Sweater")
+            bottomList = listOf("Jeans", "Cotton pants")
+        }
+        temp in 12..16 -> {
+            outerList = listOf("Leather Jacket", "Blouson", "Stadium Jacket", "Light Jacket", "Windbreaker")
+            topList = listOf("Sweater", "Shirt")
+            bottomList = listOf("Jeans", "Cotton pants")
+        }
+        temp in 9..11 -> {
+            outerList = listOf("Coat", "Trench coat", "Fleece")
+            topList = listOf("Sweater")
+            bottomList = listOf("Jeans", "Cotton pants")
+        }
+        temp in 5..8 -> {
+            outerList = listOf("Coat", "Puffer Jacket", "Fleece")
+            topList = listOf("Sweatshirt", "Sweater")
+            bottomList = listOf("Jeans", "Cotton pants")
+        }
+        else -> {
+            outerList = listOf("Puffer Jacket (Short, Long)", "Heavy outer")
+            topList = listOf("Sweater", "Hoodie")
+            bottomList = listOf("Jeans", "Cotton pants")
+        }
+    }
+
+    val outer = outerList[Random.nextInt(outerList.size)]
+    val top = topList[Random.nextInt(topList.size)]
+    val bottom = bottomList[Random.nextInt(bottomList.size)]
+
+    return ClothingRecommendation(outer, top, bottom)
+}
+
 
 @Composable
 fun ClothingRecommendationScreen(weatherData: WeatherData) {
