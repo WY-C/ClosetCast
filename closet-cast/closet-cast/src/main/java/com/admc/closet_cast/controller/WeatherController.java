@@ -2,6 +2,7 @@ package com.admc.closet_cast.controller;
 
 import com.admc.closet_cast.dto.DailyWeatherDto;
 import com.admc.closet_cast.service.WeatherService;
+import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.EnableScheduling;
@@ -25,6 +26,7 @@ public class WeatherController {
     private static final int NX = 55;
     private static final int NY = 127;
 
+    @Operation(summary = "날씨 정보 저장", description = "정해진 시간마다 기상청으로부터 날씨 정보를 받아옵니다.")
     @Scheduled(cron = "0 30 2,5,8,11,14,17,20,23 * * *", zone = "Asia/Seoul")
     @GetMapping("/get")
     public ResponseEntity<List<DailyWeatherDto>> getWeather() {
