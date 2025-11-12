@@ -30,7 +30,7 @@ public class MemberService {
 
     private final Map<String, Tendency> tendencyMap = Map.of(
             "더위를 많이 타요.", Tendency.HOT,
-            "추위를 많이 타요.", Tendency.WARM
+            "추위를 많이 타요.", Tendency.COLD
     );
 
     @Transactional

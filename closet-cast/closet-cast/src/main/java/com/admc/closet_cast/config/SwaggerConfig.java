@@ -15,8 +15,8 @@ public class SwaggerConfig {
     @Bean
     public OpenAPI SchrodingerApi() {
         Info info = new Info()
-                .title("SJSeed Swagger")
-                .description("SJSeed Swagger Documentation")
+                .title("ClosetCast Swagger")
+                .description("ClosetCast Swagger Documentation")
                 .version("1.0.0");
 
         String jwtSchemeName = "JWT TOKEN";

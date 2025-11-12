@@ -94,16 +94,17 @@ public class RecommendService {
         String systemPrompt = String.format(
                 "너는 사용자의 옷장 정보를 기반으로 날씨에 맞는 옷을 추천하는 패션 어시턴트야. " +
                         "사용자가 가진 옷 목록은 다음과 같아: [%s]. " +
-                        "반드시 이 목록 안에서만 (상의, 하의) 조합을 추천해야 해. " +
-                        "다른 설명, 인사, 날씨 브리핑 없이 오직 (상의 아이템, 하의 아이템) 형식으로만 대답해야 해. " +
-                        "예시: (맨투맨, 청바지)",
+                        "이 옷 중에서 PUFFER_JACKET, FLEECE, JACKET, WIND_BREAKER는 아우터, SWEATER, HOODIE, SHIRT, LONG_SLEEVE, SHORT_SLEEVE는 상의, JEANS, COTTON_PANTS, SHORTS는 하의야."+
+                        "반드시 이 목록 안에서만 (아우터, 상의, 하의) 조합을 추천해야 해. " +
+                        "다른 설명, 인사, 날씨 브리핑 없이 오직 (아우터, 상의 아이템, 하의 아이템) 형식으로만 대답해야 해. " +
+                        "예시: (아우터, 맨투맨, 청바지)",
                 clothes
         );
 
         String userPrompt = String.format(
                 "오늘 최고기온 %f도, 최저기온 %f도, 체감 최고기온 %f도, 체감 최저기온 %f도야. " +
                         "내 패션 선호도는 '%s'이고, 내 성향은 '%s'이야. " +
-                        "내가 가진 옷 중에서 (상의, 하의) 조합 하나만 추천해줘.",
+                        "내가 가진 옷 중에서 (아우터, 상의, 하의) 조합 하나만 추천해줘.",
                 max_temp, min_temp, max_feel, min_feel, preference, tendencies
         );
 
@@ -120,7 +121,7 @@ public class RecommendService {
                         new ChatMessage("user", userPrompt)
                 ),
                 100,
-                0.7
+                0.2
         );
 
         // 5. HTTP 요청 엔티티 생성
@@ -143,16 +144,18 @@ public class RecommendService {
                 // 파싱 로직
                 String cleaned = gptReply.replaceAll("[()\\s]", ""); // ( ) 및 공백 제거
                 String[] parts = cleaned.split(",");
-                String top = parts.length > 0 ? parts[0] : "";
-                String bottom = parts.length > 1 ? parts[1] : "";
+                String outer = parts.length > 0 ? parts[0] : "";
+                String top = parts.length > 1 ? parts[1] : "";
+                String bottom = parts.length > 1 ? parts[2] : "";
 
                 log.info("gpt-reply: {}", gptReply);
                 log.info("cleaned: {}", cleaned);
+                log.info("outer: {}", outer);
                 log.info("top: {}", top);
                 log.info("bottom: {}", bottom);
 
                 // ✅ [수정] RecommendDto 생성자에 top과 bottom을 전달
-                RecommendDto resultDto = new RecommendDto(top, bottom);
+                RecommendDto resultDto = new RecommendDto(outer, top, bottom);
 
                 // ✅ [추가] 반환할 DTO 객체 자체를 로그로 확인
                 log.info("Returning DTO: {}", resultDto.toString());

@@ -1,8 +1,17 @@
 package com.admc.closet_cast.entity;
 
 public enum Cloth {
+    PUFFER_JACKET,
+    COAT,
+    FLEECE,
+    JACKET,
+    WINDBREAKER,
+    SWEATER,
     HOODIE,
-    PANTS,
-    SHORT,
-    TSHIRT
+    SHIRT,
+    LONG_SLEEVE,
+    SHORT_SLEEVE,
+    JEANS,
+    COTTON_PANTS,
+    SHORTS
 }
