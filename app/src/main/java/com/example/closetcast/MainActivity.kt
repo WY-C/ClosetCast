@@ -252,6 +252,7 @@ sealed class BottomNavItem(val route: String, val title: String, val icon: Image
 data class CurrentWeather(
     val location: String,
     val temperature: Int,
+    val apparentTemperature: Int,
     val weatherCondition: String,
     val minTemp: Int,
     val maxTemp: Int
@@ -304,16 +305,18 @@ fun CurrentWeatherCard(currentWeather: CurrentWeather) {
         Spacer(modifier = Modifier.height(8.dp))
         Text(text = "${currentWeather.temperature}°", fontSize = 64.sp, fontWeight = FontWeight.Bold)
         Spacer(modifier = Modifier.height(8.dp))
-        Text(text = "어제보다 1° 낮아요", fontSize = 16.sp)
+        Text(text = "1° lower than yesterday", fontSize = 16.sp)
         Spacer(modifier = Modifier.height(8.dp))
-        Text(text = "최저: ${currentWeather.minTemp}° 최고: ${currentWeather.maxTemp}°", fontSize = 16.sp)
+        Text(text = "Min: ${currentWeather.minTemp}° Max: ${currentWeather.maxTemp}°", fontSize = 16.sp)
+        Spacer(modifier = Modifier.height(12.dp))
+        ApparentTemperatureCard(currentWeather.apparentTemperature)
     }
 }
 
 @Composable
 fun HourlyForecastCard(hourlyForecasts: List<HourlyForecast>) {
     Column(modifier = Modifier.fillMaxWidth()) {
-        Text(text = "시간별 예보", fontSize = 20.sp, fontWeight = FontWeight.Bold)
+        Text(text = "Hourly Forecast", fontSize = 20.sp, fontWeight = FontWeight.Bold)
         Spacer(modifier = Modifier.height(8.dp))
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -335,7 +338,7 @@ fun HourlyForecastCard(hourlyForecasts: List<HourlyForecast>) {
 @Composable
 fun DailyForecastCard(dailyForecasts: List<DailyForecast>) {
     Column(modifier = Modifier.fillMaxWidth()) {
-        Text(text = "3일 예보", fontSize = 20.sp, fontWeight = FontWeight.Bold)
+        Text(text = "3-Day Forecast", fontSize = 20.sp, fontWeight = FontWeight.Bold)
         Spacer(modifier = Modifier.height(8.dp))
         dailyForecasts.forEach { forecast ->
             Row(
@@ -347,9 +350,43 @@ fun DailyForecastCard(dailyForecasts: List<DailyForecast>) {
             ) {
                 Text(text = forecast.day, fontSize = 16.sp)
                 Icon(forecast.weatherIcon, contentDescription = null, modifier = Modifier.size(32.dp))
-                Text(text = "최저: ${forecast.minTemp}°", fontSize = 16.sp)
-                Text(text = "최고: ${forecast.maxTemp}°", fontSize = 16.sp)
+                Text(text = "Min: ${forecast.minTemp}°", fontSize = 16.sp)
+                Text(text = "Max: ${forecast.maxTemp}°", fontSize = 16.sp)
             }
+        }
+    }
+}
+
+@Composable
+fun ApparentTemperatureCard(apparentTemperature: Int) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth(0.8f)
+            .padding(8.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
+        )
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = "Feels Like",
+                fontSize = 14.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = "$apparentTemperature°",
+                fontSize = 28.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary
+            )
         }
     }
 }
@@ -368,7 +405,7 @@ fun ClothingRecommendationCard(recommendation: ClothingRecommendation) {
             horizontalArrangement = Arrangement.SpaceEvenly,
             modifier = Modifier.fillMaxWidth()
         ) {
-            // 아우터 Card
+            // Outer Wear Card
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(text = "Outer", style = MaterialTheme.typography.titleMedium)
                 Box(
@@ -388,7 +425,7 @@ fun ClothingRecommendationCard(recommendation: ClothingRecommendation) {
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(text = recommendation.outer, style = MaterialTheme.typography.bodyLarge)
             }
-            // 상의 Card
+            // Top Wear Card
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(text = "Top", style = MaterialTheme.typography.titleMedium)
                 Box(
@@ -409,7 +446,7 @@ fun ClothingRecommendationCard(recommendation: ClothingRecommendation) {
                 Text(text = recommendation.top, style = MaterialTheme.typography.bodyLarge)
             }
 
-            // 하의 Card (여기 추가)
+            // Bottom Wear Card (여기 추가)
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(text = "Bottom", style = MaterialTheme.typography.titleMedium)
                 Box(
@@ -432,7 +469,7 @@ fun ClothingRecommendationCard(recommendation: ClothingRecommendation) {
         }
         Spacer(modifier = Modifier.height(24.dp))
         OutlinedButton(onClick = { /* TODO */ }) {
-            Text("다른 추천 보기")
+            Text("View Other Recommendations")
         }
     }
 }
@@ -449,7 +486,7 @@ fun getImageResourceForClothingName(name: String): Int {
         "jeans" -> R.drawable.jeans
         "cotton pants" -> R.drawable.trouser
         "shorts" -> R.drawable.shorts
-        else -> R.drawable.default_clothing // 기본 이미지
+        else -> R.drawable.default_clothing // default image
     }
 }
 
@@ -525,7 +562,7 @@ fun ChangePasswordScreen(navController: NavController) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Password 수정") },
+                title = { Text("Edit Password") },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Previous")
@@ -585,7 +622,7 @@ fun WithdrawScreen(navController: NavController) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("회원탈퇴") },
+                title = { Text("Account Withdrawal") },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Previous")
@@ -602,11 +639,11 @@ fun WithdrawScreen(navController: NavController) {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            Text("정말로 탈퇴하시겠습니까?", fontSize = 20.sp)
+            Text("Are you sure you want to withdraw?", fontSize = 20.sp)
             Spacer(modifier = Modifier.height(24.dp))
             Button(
                 onClick = {
-                    Toast.makeText(context, "회원탈퇴가 완료되었습니다.", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, "Account withdrawal completed.", Toast.LENGTH_SHORT).show()
                     navController.navigate("login") {
                         popUpTo(navController.graph.findStartDestination().id) {
                             inclusive = true
@@ -615,7 +652,7 @@ fun WithdrawScreen(navController: NavController) {
                 },
                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
             ) {
-                Text("회원탈퇴")
+                Text("Account Withdrawal")
             }
         }
     }
@@ -635,27 +672,27 @@ fun MainScreen(navController: NavController) {
 
     // TODO: 샘플 데이터가 아닌 실시간 데이터를 받아와야 함.
     val sampleWeatherData = WeatherData(
-        current = CurrentWeather("동작구 상도1동", 12, "맑음", 11, 17),
+        current = CurrentWeather("Dongjak-gu, Sangdo 1-dong", 12, 10,"Clear", 11, 17),
         hourly = listOf(
-            HourlyForecast("오후 2시", 12, Icons.Default.WbSunny),
-            HourlyForecast("오후 3시", 12, Icons.Default.WbSunny),
-            HourlyForecast("오후 4시", 11, Icons.Default.WbSunny),
-            HourlyForecast("오후 5시", 11, Icons.Default.WbSunny),
-            HourlyForecast("오후 6시", 11, Icons.Default.WbSunny),
-            HourlyForecast("오후 7시", 11, Icons.Default.WbSunny)
+            HourlyForecast("2:00 PM", 12, Icons.Default.WbSunny),
+            HourlyForecast("3:00 PM", 12, Icons.Default.WbSunny),
+            HourlyForecast("4:00 PM", 11, Icons.Default.WbSunny),
+            HourlyForecast("5:00 PM", 11, Icons.Default.WbSunny),
+            HourlyForecast("6:00 PM", 11, Icons.Default.WbSunny),
+            HourlyForecast("7:00 PM", 11, Icons.Default.WbSunny)
         ),
         daily = listOf(
-            DailyForecast("오늘", 11, 17, Icons.Default.WbSunny),
-            DailyForecast("내일", 10, 18, Icons.Default.WbSunny),
-            DailyForecast("모레", 9, 16, Icons.Default.WbSunny)
+            DailyForecast("Today", 11, 17, Icons.Default.WbSunny),
+            DailyForecast("Tomorrow", 10, 18, Icons.Default.WbSunny),
+            DailyForecast("Day After Tomorrow", 9, 16, Icons.Default.WbSunny)
         )
     )
 
 
     val drawerItems = listOf(
-        "Password 수정" to "change_password",
-        "나의 옷장 수정" to "clothes_setting",
-        "개인정보 수정" to "style_and_sensitivity?isSignUpProcess=false"
+        "Edit Password" to "change_password",
+        "Edit My Closet" to "clothes_setting",
+        "Edit Personal Information" to "style_and_sensitivity?isSignUpProcess=false"
     )
 
     ModalNavigationDrawer(
@@ -675,7 +712,7 @@ fun MainScreen(navController: NavController) {
                 }
                 HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
                 NavigationDrawerItem(
-                    label = { Text("로그아웃") },
+                    label = { Text("Logout") },
                     selected = false,
                     onClick = {
                         scope.launch { drawerState.close() }
@@ -688,7 +725,7 @@ fun MainScreen(navController: NavController) {
                     }
                 )
                 NavigationDrawerItem(
-                    label = { Text("회원탈퇴") },
+                    label = { Text("Account Withdrawal") },
                     selected = false,
                     onClick = {
                         scope.launch { drawerState.close() }
@@ -810,7 +847,7 @@ fun StyleAndSensitivityScreen(navController: NavController, isSignUpProcess: Boo
         topBar = {
             if (!isSignUpProcess) {
                 TopAppBar(
-                    title = { Text("개인정보 수정") },
+                    title = { Text("Edit Personal Information") },
                     navigationIcon = {
                         IconButton(onClick = { navController.popBackStack() }) {
                             Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Previous")
@@ -823,14 +860,14 @@ fun StyleAndSensitivityScreen(navController: NavController, isSignUpProcess: Boo
             Button(
                 onClick = {
                     if (isSignUpProcess) {
-                        Toast.makeText(context, "회원가입이 완료되었습니다.", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, "Sign up completed.", Toast.LENGTH_SHORT).show()
                         navController.navigate("login") {
                             popUpTo(navController.graph.findStartDestination().id) {
                                 inclusive = true
                             }
                         }
                     } else {
-                        Toast.makeText(context, "수정이 완료되었습니다.", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, "Edit completed.", Toast.LENGTH_SHORT).show()
                         navController.popBackStack()
                     }
                 },
@@ -838,7 +875,7 @@ fun StyleAndSensitivityScreen(navController: NavController, isSignUpProcess: Boo
                     .fillMaxWidth()
                     .padding(16.dp)
             ) {
-                Text(if (isSignUpProcess) "Done" else "수정 완료")
+                Text(if (isSignUpProcess) "Done" else "Edit Complete")
             }
         }
     ) { innerPadding ->
@@ -938,7 +975,7 @@ fun ClothesSetting(navController: NavController) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("나의 옷장 수정") },
+                title = { Text("Edit My Closet") },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Previous")
@@ -949,12 +986,12 @@ fun ClothesSetting(navController: NavController) {
         bottomBar = {
             Button(
                 onClick = {
-                    Toast.makeText(context, "수정이 완료되었습니다.", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, "Edit completed.", Toast.LENGTH_SHORT).show()
                     navController.popBackStack()
                 },
                 modifier = Modifier.fillMaxWidth().padding(16.dp)
             ) {
-                Text("수정 완료")
+                Text("Edit Complete")
             }
         }
     ) { innerPadding ->
@@ -968,8 +1005,8 @@ fun ClothesSetting(navController: NavController) {
             Text("What clothes do you have?", fontSize = 24.sp, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
             Spacer(modifier = Modifier.height(24.dp))
 
-            // 아우터 Section
-            Text("아우터", style = MaterialTheme.typography.headlineSmall)
+            // Outer Wear Section
+            Text("Outer Wear", style = MaterialTheme.typography.headlineSmall)
             Spacer(modifier = Modifier.height(8.dp))
             val (outerwear, setOuterwear) = remember { mutableStateOf(mapOf("Puffer Jacket" to false, "coat" to false, "Fleece" to false, "jacket" to false, "windbreaker" to false)) }
             outerwear.keys.forEach { item ->
@@ -979,8 +1016,8 @@ fun ClothesSetting(navController: NavController) {
             }
             Spacer(modifier = Modifier.height(16.dp))
 
-            // 상의 Section
-            Text("상의", style = MaterialTheme.typography.headlineSmall)
+            // Top Wear Section
+            Text("Top Wear", style = MaterialTheme.typography.headlineSmall)
             Spacer(modifier = Modifier.height(8.dp))
             val (tops, setTops) = remember { mutableStateOf(mapOf("sweater" to false, "hoodie" to false, "shirt" to false, "long sleeve" to false, "short sleeve" to false)) }
             tops.keys.forEach { item ->
@@ -990,8 +1027,8 @@ fun ClothesSetting(navController: NavController) {
             }
             Spacer(modifier = Modifier.height(16.dp))
 
-            // 하의 Section
-            Text("하의", style = MaterialTheme.typography.headlineSmall)
+            // Bottom Wear Section
+            Text("Bottom Wear", style = MaterialTheme.typography.headlineSmall)
             Spacer(modifier = Modifier.height(8.dp))
             val (bottoms, setBottoms) = remember { mutableStateOf(mapOf("jeans" to false, "cotton pants" to false, "shorts" to false)) }
             bottoms.keys.forEach { item ->
@@ -1048,19 +1085,19 @@ fun ClothesSettingPreview() {
 fun WeatherScreenPreview() {
     // #TODO : 왜 Preview에서도 샘플 데이터가 쓰이는진 모르겠지만 여기도 수정 필요
     val sampleWeatherData = WeatherData(
-        current = CurrentWeather("동작구 상도1동", 12, "맑음", 11, 17),
+        current = CurrentWeather("Dongjak-gu, Sangdo 1-dong", 12, 10,"Clear", 11, 17),
         hourly = listOf(
-            HourlyForecast("오후 2시", 12, Icons.Default.WbSunny),
-            HourlyForecast("오후 3시", 12, Icons.Default.WbSunny),
-            HourlyForecast("오후 4시", 11, Icons.Default.WbSunny),
-            HourlyForecast("오후 5시", 11, Icons.Default.WbSunny),
-            HourlyForecast("오후 6시", 11, Icons.Default.WbSunny),
-            HourlyForecast("오후 7시", 11, Icons.Default.WbSunny)
+            HourlyForecast("2:00 PM", 12, Icons.Default.WbSunny),
+            HourlyForecast("3:00 PM", 12, Icons.Default.WbSunny),
+            HourlyForecast("4:00 PM", 11, Icons.Default.WbSunny),
+            HourlyForecast("5:00 PM", 11, Icons.Default.WbSunny),
+            HourlyForecast("6:00 PM", 11, Icons.Default.WbSunny),
+            HourlyForecast("7:00 PM", 11, Icons.Default.WbSunny)
         ),
         daily = listOf(
-            DailyForecast("오늘", 11, 17, Icons.Default.WbSunny),
-            DailyForecast("내일", 10, 18, Icons.Default.WbSunny),
-            DailyForecast("모레", 9, 16, Icons.Default.WbSunny)
+            DailyForecast("Today", 11, 17, Icons.Default.WbSunny),
+            DailyForecast("Tomorrow", 10, 18, Icons.Default.WbSunny),
+            DailyForecast("Day After Tomorrow", 9, 16, Icons.Default.WbSunny)
         )
     )
     ClosetCastTheme {
@@ -1080,7 +1117,7 @@ fun ChangePasswordScreenPreview() {
 @Composable
 fun ClothingRecommendationScreenPreview() {
     val sampleWeatherData = WeatherData(
-        current = CurrentWeather("동작구 상도1동", 12, "맑음", 11, 17),
+        current = CurrentWeather("Dongjak-gu, Sangdo 1-dong", 12, 10,"Clear", 11, 17),
         hourly = listOf(),
         daily = listOf()
     )
