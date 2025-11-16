@@ -1,5 +1,9 @@
 package com.example.closetcast
 
+import android.Manifest
+import android.content.Context
+import android.content.pm.PackageManager
+import android.location.LocationManager
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
@@ -34,6 +38,17 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import android.util.Log
+import androidx.compose.runtime.State
+import androidx.compose.runtime.mutableStateOf
+import com.example.closetcast.api.RetrofitClient
+import com.example.closetcast.api.WeatherApiResponse
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import retrofit2.HttpException
+import androidx.core.content.ContextCompat
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -47,7 +62,95 @@ import com.example.closetcast.ui.theme.ClosetCastTheme
 import kotlinx.coroutines.launch
 import kotlin.random.Random
 
+class WeatherViewModel : ViewModel() {
+    private val _weatherData = mutableStateOf<WeatherData?>(null)
+    val weatherData: State<WeatherData?> = _weatherData
 
+    private val _isLoading = mutableStateOf(false)
+    val isLoading: State<Boolean> = _isLoading
+
+    private val _error = mutableStateOf<String?>(null)
+    val error: State<String?> = _error
+
+    suspend fun fetchWeather(latitude: Double, longitude: Double) {
+        _isLoading.value = true
+        _error.value = null
+
+        try {
+            withContext(Dispatchers.IO) {
+                val response = RetrofitClient.apiService.getWeather(latitude, longitude)
+                Log.d("WeatherViewModel", "API 응답: $response")
+
+                _weatherData.value = convertApiResponseToWeatherData(response)
+            }
+        } catch (e: Exception) {
+            val errorMessage = when (e) {
+                is HttpException -> "HTTP 오류: ${e.code()} - ${e.message}"
+                is java.io.IOException -> "네트워크 오류: ${e.message}"
+                else -> "오류 발생: ${e.message}"
+            }
+            _error.value = errorMessage
+            Log.e("WeatherViewModel", errorMessage, e)
+        } finally {
+            _isLoading.value = false
+        }
+    }
+
+    private fun convertApiResponseToWeatherData(response: Any): WeatherData {
+        // API 응답을 WeatherData로 변환
+        return when (response) {
+            is WeatherApiResponse -> {
+                WeatherData(
+                    current = CurrentWeather(
+                        location = response.location,
+                        temperature = response.temperature.toInt(),
+                        apparentTemperature = response.humidity,
+                        weatherCondition = response.description,
+                        minTemp = response.minTemp,
+                        maxTemp = response.maxTemp
+                    ),
+                    hourly = listOf(),
+                    daily = listOf()
+                )
+            }
+            else -> WeatherData(
+                current = CurrentWeather("Unknown", 0, 0, "No data", 0, 0),
+                hourly = listOf(),
+                daily = listOf()
+            )
+        }
+    }
+}
+
+// ===================== 위치 관리 유틸리티 =====================
+class LocationManager(private val context: Context) {
+    private val locationManager = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
+
+    fun requestLocationUpdates(onLocationReceived: (Double, Double) -> Unit) {
+        val permissions = arrayOf(
+            Manifest.permission.ACCESS_FINE_LOCATION,
+            Manifest.permission.ACCESS_COARSE_LOCATION
+        )
+
+        if (ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION)
+            == PackageManager.PERMISSION_GRANTED) {
+            try {
+                val location = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER)
+                if (location != null) {
+                    onLocationReceived(location.latitude, location.longitude)
+                } else {
+                    // GPS 기반 위치 없으면 네트워크 기반 위치 시도
+                    val networkLocation = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER)
+                    if (networkLocation != null) {
+                        onLocationReceived(networkLocation.latitude, networkLocation.longitude)
+                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+}
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -664,30 +767,32 @@ fun MainScreen(navController: NavController) {
     val bottomBarNavController = rememberNavController()
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
 
     val items = listOf(
         BottomNavItem.Weather,
         BottomNavItem.Clothing
     )
 
-    // TODO: 샘플 데이터가 아닌 실시간 데이터를 받아와야 함.
-    val sampleWeatherData = WeatherData(
-        current = CurrentWeather("Dongjak-gu, Sangdo 1-dong", 12, 10,"Clear", 11, 17),
-        hourly = listOf(
-            HourlyForecast("2:00 PM", 12, Icons.Default.WbSunny),
-            HourlyForecast("3:00 PM", 12, Icons.Default.WbSunny),
-            HourlyForecast("4:00 PM", 11, Icons.Default.WbSunny),
-            HourlyForecast("5:00 PM", 11, Icons.Default.WbSunny),
-            HourlyForecast("6:00 PM", 11, Icons.Default.WbSunny),
-            HourlyForecast("7:00 PM", 11, Icons.Default.WbSunny)
-        ),
-        daily = listOf(
-            DailyForecast("Today", 11, 17, Icons.Default.WbSunny),
-            DailyForecast("Tomorrow", 10, 18, Icons.Default.WbSunny),
-            DailyForecast("Day After Tomorrow", 9, 16, Icons.Default.WbSunny)
-        )
-    )
+    val weatherViewModel = viewModel<WeatherViewModel>()
+    val weatherData by weatherViewModel.weatherData
+    val isLoading by weatherViewModel.isLoading
+    val errorMessage by weatherViewModel.error
 
+    var latitude by remember { mutableStateOf(0.0) }
+    var longitude by remember { mutableStateOf(0.0) }
+
+    // 앱 시작 시 위치 정보 요청
+    LaunchedEffect(Unit) {
+        val locationManager = LocationManager(context)
+        locationManager.requestLocationUpdates { lat, lng ->
+            latitude = lat
+            longitude = lng
+            scope.launch {
+                weatherViewModel.fetchWeather(lat, lng)
+            }
+        }
+    }
 
     val drawerItems = listOf(
         "Edit Password" to "change_password",
@@ -720,7 +825,6 @@ fun MainScreen(navController: NavController) {
                             popUpTo(navController.graph.findStartDestination().id) {
                                 inclusive = true
                             }
-                            launchSingleTop = true
                         }
                     }
                 )
@@ -795,8 +899,32 @@ fun MainScreen(navController: NavController) {
                 startDestination = BottomNavItem.Weather.route,
                 Modifier.padding(innerPadding)
             ) {
-                composable(BottomNavItem.Weather.route) { WeatherScreen(sampleWeatherData) }
-                composable(BottomNavItem.Clothing.route) { ClothingRecommendationScreen(sampleWeatherData) }
+                composable(BottomNavItem.Weather.route) {
+                    if (isLoading) {
+                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator()
+                        }
+                    } else if (errorMessage != null) {
+                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            Text("오류: $errorMessage", color = MaterialTheme.colorScheme.error)
+                        }
+                    } else if (weatherData != null) {
+                        WeatherScreen(weatherData!!)
+                    } else {
+                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            Text("위치 정보를 요청 중입니다...")
+                        }
+                    }
+                }
+                composable(BottomNavItem.Clothing.route) {
+                    if (weatherData != null) {
+                        ClothingRecommendationScreen(weatherData!!)
+                    } else {
+                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            Text("날씨 정보를 불러오는 중...")
+                        }
+                    }
+                }
             }
         }
     }
@@ -1087,12 +1215,12 @@ fun WeatherScreenPreview() {
     val sampleWeatherData = WeatherData(
         current = CurrentWeather("Dongjak-gu, Sangdo 1-dong", 12, 10,"Clear", 11, 17),
         hourly = listOf(
-            HourlyForecast("2:00 PM", 12, Icons.Default.WbSunny),
-            HourlyForecast("3:00 PM", 12, Icons.Default.WbSunny),
-            HourlyForecast("4:00 PM", 11, Icons.Default.WbSunny),
-            HourlyForecast("5:00 PM", 11, Icons.Default.WbSunny),
-            HourlyForecast("6:00 PM", 11, Icons.Default.WbSunny),
-            HourlyForecast("7:00 PM", 11, Icons.Default.WbSunny)
+            HourlyForecast("2 PM", 12, Icons.Default.WbSunny),
+            HourlyForecast("3 PM", 12, Icons.Default.WbSunny),
+            HourlyForecast("4 PM", 11, Icons.Default.WbSunny),
+            HourlyForecast("5 PM", 11, Icons.Default.WbSunny),
+            HourlyForecast("6 PM", 11, Icons.Default.WbSunny),
+            HourlyForecast("7 PM", 11, Icons.Default.WbSunny)
         ),
         daily = listOf(
             DailyForecast("Today", 11, 17, Icons.Default.WbSunny),
