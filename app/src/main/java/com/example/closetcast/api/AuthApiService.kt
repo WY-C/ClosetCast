@@ -2,11 +2,11 @@ package com.example.closetcast.api
 
 import retrofit2.http.POST
 import retrofit2.http.Body
-import com.google.gson.annotations.SerializedName
 import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.PATCH
 import retrofit2.http.Path
+import com.google.gson.annotations.SerializedName
 
 // ===== 로그인 =====
 data class SignInRequestDto(
@@ -16,6 +16,7 @@ data class SignInRequestDto(
     @SerializedName("password")
     val password: String
 )
+
 data class SignInResponseDto(
     @SerializedName("isSuccess")
     val memberId: String,

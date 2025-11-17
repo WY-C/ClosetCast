@@ -1,8 +1,8 @@
 package com.example.closetcast.api
 
 import retrofit2.http.GET
-import com.google.gson.annotations.SerializedName
 import retrofit2.http.Path
+import com.google.gson.annotations.SerializedName
 
 // ===== 시간별 날씨 업데이트 =====
 data class DailyWeatherDto(
@@ -18,7 +18,7 @@ data class DailyWeatherDto(
     @SerializedName("hourlyList") // 오늘 시간 별 온도, 체감 온도
     val hourlyList: List<HourlyWeatherDto>,
 
-    @SerializedName("apparentMap") // 현재 시간 체감 온도 -> ? 뭔가 좀 이상함
+    @SerializedName("apparentMap") // 현재 시간 체감 온도 배열 -> ? 뭔가 좀 이상함
     val apparentMap: Map<String, Double>
 )
 data class HourlyWeatherDto(
