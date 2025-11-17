@@ -5,10 +5,12 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.location.LocationManager
 import android.os.Bundle
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -38,16 +40,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import android.util.Log
-import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
-import com.example.closetcast.api.RetrofitClient
-import com.example.closetcast.api.WeatherApiResponse
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import retrofit2.HttpException
 import androidx.core.content.ContextCompat
-import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.NavDestination.Companion.hierarchy
@@ -62,75 +56,11 @@ import com.example.closetcast.ui.theme.ClosetCastTheme
 import kotlinx.coroutines.launch
 import kotlin.random.Random
 
-class WeatherViewModel : ViewModel() {
-    private val _weatherData = mutableStateOf<WeatherData?>(null)
-    val weatherData: State<WeatherData?> = _weatherData
-
-    private val _isLoading = mutableStateOf(false)
-    val isLoading: State<Boolean> = _isLoading
-
-    private val _error = mutableStateOf<String?>(null)
-    val error: State<String?> = _error
-
-    suspend fun fetchWeather(latitude: Double, longitude: Double) {
-        _isLoading.value = true
-        _error.value = null
-
-        try {
-            withContext(Dispatchers.IO) {
-                val response = RetrofitClient.apiService.getWeather(latitude, longitude)
-                Log.d("WeatherViewModel", "API 응답: $response")
-
-                _weatherData.value = convertApiResponseToWeatherData(response)
-            }
-        } catch (e: Exception) {
-            val errorMessage = when (e) {
-                is HttpException -> "HTTP 오류: ${e.code()} - ${e.message}"
-                is java.io.IOException -> "네트워크 오류: ${e.message}"
-                else -> "오류 발생: ${e.message}"
-            }
-            _error.value = errorMessage
-            Log.e("WeatherViewModel", errorMessage, e)
-        } finally {
-            _isLoading.value = false
-        }
-    }
-
-    private fun convertApiResponseToWeatherData(response: Any): WeatherData {
-        // API 응답을 WeatherData로 변환
-        return when (response) {
-            is WeatherApiResponse -> {
-                WeatherData(
-                    current = CurrentWeather(
-                        location = response.location,
-                        temperature = response.temperature.toInt(),
-                        apparentTemperature = response.humidity,
-                        weatherCondition = response.description,
-                        minTemp = response.minTemp,
-                        maxTemp = response.maxTemp
-                    ),
-                    hourly = listOf(),
-                    daily = listOf()
-                )
-            }
-            else -> WeatherData(
-                current = CurrentWeather("Unknown", 0, 0, "No data", 0, 0),
-                hourly = listOf(),
-                daily = listOf()
-            )
-        }
-    }
-}
-
 // ===================== 위치 관리 유틸리티 =====================
 class LocationManager(private val context: Context) {
     private val locationManager = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
 
     fun requestLocationUpdates(onLocationReceived: (Double, Double) -> Unit) {
-        val permissions = arrayOf(
-            Manifest.permission.ACCESS_FINE_LOCATION,
-            Manifest.permission.ACCESS_COARSE_LOCATION
-        )
 
         if (ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION)
             == PackageManager.PERMISSION_GRANTED) {
@@ -153,13 +83,68 @@ class LocationManager(private val context: Context) {
 }
 
 class MainActivity : ComponentActivity() {
+
+    // ✅ 새로운 방식: Activity Result Contract 사용
+    private val requestPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        val fineLocationGranted = permissions[Manifest.permission.ACCESS_FINE_LOCATION] ?: false
+        val coarseLocationGranted = permissions[Manifest.permission.ACCESS_COARSE_LOCATION] ?: false
+
+        Log.d("MainActivity", "========== 권한 요청 결과 ==========")
+        Log.d("MainActivity", "FINE_LOCATION: $fineLocationGranted")
+        Log.d("MainActivity", "COARSE_LOCATION: $coarseLocationGranted")
+
+        if (fineLocationGranted || coarseLocationGranted) {
+            Log.d("MainActivity", "위치 권한 허용됨")
+            // 권한 허용 시 처리 로직
+        } else {
+            Log.d("MainActivity", "위치 권한 거부됨")
+            // 권한 거부 시 처리 로직 (사용자 안내 등)
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // 권한 요청
+        requestLocationPermissions()
+
         enableEdgeToEdge()
         setContent {
             ClosetCastTheme {
-                AppNavigation()
+                Surface {
+                    AppNavigation()
+                }
             }
+        }
+    }
+
+    private fun requestLocationPermissions() {
+        Log.d("MainActivity", "위치 권한 요청 시작")
+
+        val permissions = arrayOf(
+            Manifest.permission.ACCESS_FINE_LOCATION,
+            Manifest.permission.ACCESS_COARSE_LOCATION
+        )
+
+        // 이미 권한이 있는지 확인
+        val hasFineLocation = ContextCompat.checkSelfPermission(
+            this, Manifest.permission.ACCESS_FINE_LOCATION
+        ) == PackageManager.PERMISSION_GRANTED
+
+        val hasCoarseLocation = ContextCompat.checkSelfPermission(
+            this, Manifest.permission.ACCESS_COARSE_LOCATION
+        ) == PackageManager.PERMISSION_GRANTED
+
+        Log.d("MainActivity", "현재 권한 상태 - FINE: $hasFineLocation, COARSE: $hasCoarseLocation")
+
+        // 권한이 없으면 요청
+        if (!hasFineLocation || !hasCoarseLocation) {
+            Log.d("MainActivity", "권한 요청 팝업 표시")
+            requestPermissionLauncher.launch(permissions)
+        } else {
+            Log.d("MainActivity", "이미 권한이 있음")
         }
     }
 }
@@ -204,9 +189,24 @@ fun AppNavigation() {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LoginScreen(navController: NavController) {
-    var id by rememberSaveable { mutableStateOf("") }
+    var loginId by rememberSaveable { mutableStateOf("") }
     var password by rememberSaveable { mutableStateOf("") }
+
     val context = LocalContext.current
+    val authViewModel: AuthViewModel = viewModel()
+
+    val isLoading by authViewModel.isLoading
+    val error by authViewModel.error
+    val isLoggedIn by authViewModel.isLoggedIn
+
+    // 로그인 성공 시 메인 화면으로 이동
+    LaunchedEffect(isLoggedIn) {
+        if (isLoggedIn) {
+            navController.navigate("main") {
+                popUpTo("login") { inclusive = true }
+            }
+        }
+    }
 
     Scaffold { innerPadding ->
         Column(
@@ -220,16 +220,20 @@ fun LoginScreen(navController: NavController) {
             Text(text = "ClosetCast Login", fontSize = 28.sp)
             Spacer(modifier = Modifier.height(24.dp))
 
+            // LoginId 입력
             OutlinedTextField(
-                value = id,
-                onValueChange = { id = it },
-                label = { Text("ID") },
+                value = loginId,
+                onValueChange = { loginId = it },
+                label = { Text("LoginId") },
                 modifier = Modifier.fillMaxWidth(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-                singleLine = true
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
+                singleLine = true,
+                enabled = !isLoading
             )
+
             Spacer(modifier = Modifier.height(16.dp))
 
+            // 비밀번호 입력
             OutlinedTextField(
                 value = password,
                 onValueChange = { password = it },
@@ -237,27 +241,51 @@ fun LoginScreen(navController: NavController) {
                 modifier = Modifier.fillMaxWidth(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                 visualTransformation = PasswordVisualTransformation(),
-                singleLine = true
+                singleLine = true,
+                enabled = !isLoading
             )
+
             Spacer(modifier = Modifier.height(24.dp))
 
+            // 에러 메시지 표시
+            if (error != null) {
+                Text(
+                    text = "오류: $error",
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 16.dp),
+                    textAlign = TextAlign.Center
+                )
+            }
+
+            // 로그인 버튼
             Button(
                 onClick = {
-                    if (id.isNotBlank() && password.length >= 6) {
-                        Toast.makeText(context, "Login Success!", Toast.LENGTH_SHORT).show()
-                        navController.navigate("main") {
-                            popUpTo("login") { inclusive = true }
-                        }
+                    if (loginId.isNotEmpty() && password.isNotEmpty()) {
+                        authViewModel.login(loginId, password)
                     } else {
-                        Toast.makeText(context, "Please Check your ID or Password.", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, "Please enter LoginId and Password", Toast.LENGTH_SHORT).show()
                     }
                 },
-                modifier = Modifier.fillMaxWidth().height(50.dp)
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(50.dp),
+                enabled = !isLoading && loginId.isNotEmpty() && password.isNotEmpty()
             ) {
-                Text(text = "Login", fontSize = 18.sp)
+                if (isLoading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(24.dp),
+                        color = MaterialTheme.colorScheme.onPrimary
+                    )
+                } else {
+                    Text(text = "Login", fontSize = 18.sp)
+                }
             }
 
             Spacer(modifier = Modifier.height(16.dp))
+
+            // 회원가입 버튼
             TextButton(onClick = { navController.navigate("sign_up") }) {
                 Text("Sign Up")
             }
@@ -265,15 +293,20 @@ fun LoginScreen(navController: NavController) {
     }
 }
 
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SignUpScreen(navController: NavController) {
-    var id by rememberSaveable { mutableStateOf("") }
+    var name by rememberSaveable { mutableStateOf("") }
+    var loginId by rememberSaveable { mutableStateOf("") }
     var password by rememberSaveable { mutableStateOf("") }
     var passwordCheck by rememberSaveable { mutableStateOf("") }
-    var nickname by rememberSaveable { mutableStateOf("") }
 
     val context = LocalContext.current
+    val authViewModel: AuthViewModel = viewModel()
+
+    val isLoading by authViewModel.isLoading
+    val error by authViewModel.error
 
     Scaffold { innerPadding ->
         Column(
@@ -287,26 +320,33 @@ fun SignUpScreen(navController: NavController) {
             Text(text = "ClosetCast Sign Up", fontSize = 28.sp)
             Spacer(modifier = Modifier.height(24.dp))
 
+            // 이름 입력
             OutlinedTextField(
-                value = nickname,
-                onValueChange = { nickname = it },
-                label = { Text("Nickname") },
+                value = name,
+                onValueChange = { name = it },
+                label = { Text("Name") },
                 modifier = Modifier.fillMaxWidth(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
-                singleLine = true
+                singleLine = true,
+                enabled = !isLoading
             )
+
             Spacer(modifier = Modifier.height(16.dp))
 
+            // LoginId 입력
             OutlinedTextField(
-                value = id,
-                onValueChange = { id = it },
-                label = { Text("ID") },
+                value = loginId,
+                onValueChange = { loginId = it },
+                label = { Text("LoginId") },
                 modifier = Modifier.fillMaxWidth(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-                singleLine = true
+                singleLine = true,
+                enabled = !isLoading
             )
+
             Spacer(modifier = Modifier.height(16.dp))
 
+            // 비밀번호 입력
             OutlinedTextField(
                 value = password,
                 onValueChange = { password = it },
@@ -314,10 +354,13 @@ fun SignUpScreen(navController: NavController) {
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                visualTransformation = PasswordVisualTransformation()
+                visualTransformation = PasswordVisualTransformation(),
+                enabled = !isLoading
             )
+
             Spacer(modifier = Modifier.height(16.dp))
 
+            // 비밀번호 확인
             OutlinedTextField(
                 value = passwordCheck,
                 onValueChange = { passwordCheck = it },
@@ -325,26 +368,76 @@ fun SignUpScreen(navController: NavController) {
                 modifier = Modifier.fillMaxWidth(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                 singleLine = true,
-                visualTransformation = PasswordVisualTransformation()
+                visualTransformation = PasswordVisualTransformation(),
+                enabled = !isLoading
             )
+
             Spacer(modifier = Modifier.height(16.dp))
 
-            Button(
-                onClick = {
-                    if (nickname.isNotBlank() && id.isNotBlank() && password.length >= 6 && password == passwordCheck) {
-                        navController.navigate("style_and_sensitivity?isSignUpProcess=true")
-                    } else {
-                        Toast.makeText(context, "Please Check your ID or Password.", Toast.LENGTH_SHORT).show()
-                    }
-                },
-                modifier = Modifier.fillMaxWidth().height(50.dp)
-            ) {
-                Text(text = "Next", fontSize = 18.sp)
+            // 에러 메시지
+            if (error != null) {
+                Text(
+                    text = "오류: $error",
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 16.dp),
+                    textAlign = TextAlign.Center
+                )
             }
 
+            // 회원가입 버튼
+            Button(
+                onClick = {
+                    if (name.isNotBlank() &&
+                        loginId.isNotBlank() &&
+                        password.length >= 6 &&
+                        password == passwordCheck) {
+
+                        authViewModel.signUp(
+                            name = name,
+                            loginId = loginId,
+                            password = password,
+                            preference = "GENERAL",
+                            tendencies = listOf()
+                        )
+
+                        Toast.makeText(context, "회원가입이 완료되었습니다! 로그인하세요.", Toast.LENGTH_SHORT).show()
+                        navController.popBackStack()
+                    } else {
+                        Toast.makeText(context, "정보를 확인해주세요.", Toast.LENGTH_SHORT).show()
+                    }
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(50.dp),
+                enabled = !isLoading &&
+                        name.isNotBlank() &&
+                        loginId.isNotBlank() &&
+                        password.isNotEmpty() &&
+                        passwordCheck.isNotEmpty()
+            ) {
+                if (isLoading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(24.dp),
+                        color = MaterialTheme.colorScheme.onPrimary
+                    )
+                } else {
+                    Text(text = "Sign Up", fontSize = 18.sp)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // 로그인 페이지로 돌아가기
+            TextButton(onClick = { navController.popBackStack() }) {
+                Text("Already have an account? Login")
+            }
         }
     }
 }
+
+
 
 // Sealed class for Bottom Navigation items
 sealed class BottomNavItem(val route: String, val title: String, val icon: ImageVector) {
@@ -764,6 +857,7 @@ fun WithdrawScreen(navController: NavController) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(navController: NavController) {
+
     val bottomBarNavController = rememberNavController()
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
@@ -779,18 +873,21 @@ fun MainScreen(navController: NavController) {
     val isLoading by weatherViewModel.isLoading
     val errorMessage by weatherViewModel.error
 
-    var latitude by remember { mutableStateOf(0.0) }
-    var longitude by remember { mutableStateOf(0.0) }
+    var latitude by remember { mutableDoubleStateOf(0.0) }
+    var longitude by remember { mutableDoubleStateOf(0.0) }
 
     // 앱 시작 시 위치 정보 요청
     LaunchedEffect(Unit) {
-        val locationManager = LocationManager(context)
-        locationManager.requestLocationUpdates { lat, lng ->
-            latitude = lat
-            longitude = lng
-            scope.launch {
+        Log.d("MainScreen", "LaunchedEffect 시작")
+        try {
+            val locationManager = LocationManager(context)
+            locationManager.requestLocationUpdates { lat, lng ->
+                Log.d("MainScreen", "위치 정보 받음: lat=$lat, lng=$lng")
+                // fetchWeather에 파라미터 전달하지만 API는 파라미터를 무시함
                 weatherViewModel.fetchWeather(lat, lng)
             }
+        } catch (e: Exception) {
+            Log.e("MainScreen", "위치 정보 요청 실패", e)
         }
     }
 
@@ -906,13 +1003,13 @@ fun MainScreen(navController: NavController) {
                         }
                     } else if (errorMessage != null) {
                         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            Text("오류: $errorMessage", color = MaterialTheme.colorScheme.error)
+                            Text("Error: $errorMessage", color = MaterialTheme.colorScheme.error)
                         }
                     } else if (weatherData != null) {
                         WeatherScreen(weatherData!!)
                     } else {
                         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            Text("위치 정보를 요청 중입니다...")
+                            Text("Updating the location...")
                         }
                     }
                 }
