@@ -5,9 +5,9 @@ import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.closetcast.api.LoginRequest
-import com.example.closetcast.api.SignUpRequest
+import com.example.closetcast.api.AuthApiService
 import com.example.closetcast.api.RetrofitClient
+import com.example.closetcast.api.SignInRequestDto
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -36,10 +36,10 @@ class AuthViewModel : ViewModel() {
                     Log.d("AuthViewModel", "========== 로그인 시작 ==========")
                     Log.d("AuthViewModel", "로그인 ID: $loginId")
 
-                    val loginRequest = LoginRequest(loginId = loginId, password = password)
+                    val loginRequest = SignInRequestDto(loginId = loginId, password = password)
                     Log.d("AuthViewModel", "RequestBody: $loginRequest")
 
-                    val response = RetrofitClient.authApiService.login(loginRequest)
+                    val response = RetrofitClient.authApiService.signIn(loginRequest)
 
                     Log.d("AuthViewModel", "========== 응답 받음 ==========")
                     Log.d("AuthViewModel", "응답 성공 여부: ${response.isSuccess}")
