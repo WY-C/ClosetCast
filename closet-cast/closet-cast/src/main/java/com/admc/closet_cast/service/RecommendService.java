@@ -72,7 +72,7 @@ public class RecommendService {
 
         // 1. 요청에 필요한 데이터 준비
         String clothes = member.getClothes().toString(); // ex: "[맨투맨, 후드티, 청바지, 슬랙스]"
-        String preference = member.getPreference();     // ex: "편안한 스타일 선호"
+        String preference = member.getPreferences().toString();     // ex: "편안한 스타일 선호"
         String tendencies = member.getTendencies().toString(); // ex: "[추위 많이 탐]"
 
         // 날씨 정보 (임시)

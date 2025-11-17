@@ -6,6 +6,7 @@ import com.admc.closet_cast.config.JwtProvider;
 import com.admc.closet_cast.dto.*;
 import com.admc.closet_cast.entity.Cloth;
 import com.admc.closet_cast.entity.Member;
+import com.admc.closet_cast.entity.Preference;
 import com.admc.closet_cast.entity.Tendency;
 import com.admc.closet_cast.repository.MemberRepository;
 import lombok.RequiredArgsConstructor;
@@ -41,23 +42,28 @@ public class MemberService {
 
         String encodedPassword = passwordEncoder.encode(signupDto.password());
         List<Tendency> tendencies = new ArrayList<>();
+        List<Preference> preferences = new ArrayList<>();
 
         for (String tendency : signupDto.tendencies()) {
             tendencies.add(tendencyMap.get(tendency));
+        }
+
+        for (String preference : signupDto.preference()) {
+            preferences.add(Preference.fromString(preference));
         }
 
         Member member = Member.builder()
                 .name(signupDto.name())
                 .loginId(signupDto.loginId())
                 .password(encodedPassword)
-                .preference(signupDto.preference())
+                .preference(preferences)
                 .tendencies(tendencies)
                 .build();
 
         memberRepository.save(member);
 
         return SignUpResponseDto.of(
-                member.getName(), member.getLoginId(), member.getPassword(), member.getPreference(), member.getTendencies()
+                member.getName(), member.getLoginId(), member.getPassword(), member.getPreferences(), member.getTendencies()
         );
     }
 
@@ -84,7 +90,7 @@ public class MemberService {
                         member.getId(),
                         member.getName(),
                         member.getLoginId(),
-                        member.getPreference(),
+                        member.getPreferences(),
                         member.getTendencies(),
                         member.getClothes())
                 ).collect(Collectors.toList());
@@ -96,7 +102,7 @@ public class MemberService {
                 () -> new MemberHandler(ErrorStatus.MEMBER_NOT_FOUND)
         );
 
-        return MemberDto.of(member.getId(), member.getName(), member.getLoginId(), member.getPreference(), member.getTendencies(), member.getClothes());
+        return MemberDto.of(member.getId(), member.getName(), member.getLoginId(), member.getPreferences(), member.getTendencies(), member.getClothes());
     }
 
     @Transactional
@@ -110,7 +116,12 @@ public class MemberService {
             member.setPassword(encodedPassword);
         }
         if (requestDto.preference() != null) {
-            member.setPreference(requestDto.preference());
+            List<Preference> preferences = new ArrayList<>();
+
+            for  (String preference : requestDto.preference()) {
+                preferences.add(Preference.fromString(preference));
+            }
+            member.setPreferences(preferences);
         }
         if (requestDto.tendencies() != null) {
             List<Tendency> tendencies = new ArrayList<>();
@@ -128,7 +139,7 @@ public class MemberService {
             member.setClothes(clothes);
         }
 
-        return MemberUpdateResponseDto.of(member.getId(), member.getPassword(), member.getPreference(), member.getTendencies(), member.getClothes());
+        return MemberUpdateResponseDto.of(member.getId(), member.getPassword(), member.getPreferences(), member.getTendencies(), member.getClothes());
     }
 
     @Transactional
@@ -139,6 +150,6 @@ public class MemberService {
 
         memberRepository.deleteById(memberId);
 
-        return MemberDto.of(member.getId(), member.getName(), member.getLoginId(), member.getPreference(), member.getTendencies(), member.getClothes());
+        return MemberDto.of(member.getId(), member.getName(), member.getLoginId(), member.getPreferences(), member.getTendencies(), member.getClothes());
     }
 }

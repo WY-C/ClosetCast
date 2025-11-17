@@ -27,7 +27,14 @@ public class Member extends BaseEntity{
     private String password;
 
     @Setter
-    private String preference;
+    @ElementCollection(fetch = FetchType.LAZY)
+    @CollectionTable(
+            name = "member_preferences",
+            joinColumns = @JoinColumn(name = "member_id")
+    )
+    @Column(name = "preference")
+    @Enumerated(EnumType.STRING)
+    private List<Preference> preferences;
 
     @Setter
     @ElementCollection(fetch = FetchType.LAZY)
@@ -50,11 +57,11 @@ public class Member extends BaseEntity{
     private List<Cloth> clothes;
 
     @Builder
-    public Member(String name, String loginId, String password, String preference, List<Tendency> tendencies) {
+    public Member(String name, String loginId, String password, List<Preference> preference, List<Tendency> tendencies) {
         this.name = name;
         this.loginId = loginId;
         this.password = password;
-        this.preference = preference;
+        this.preferences = preference;
         this.tendencies = tendencies;
         this.clothes = new ArrayList<>();
     }
