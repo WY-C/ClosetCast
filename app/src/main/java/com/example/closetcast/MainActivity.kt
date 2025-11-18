@@ -188,18 +188,16 @@ fun AppNavigation() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun LoginScreen(navController: NavController) {
+fun LoginScreen(navController: NavController, authViewModel: AuthViewModel = viewModel()) {
     var loginId by rememberSaveable { mutableStateOf("") }
     var password by rememberSaveable { mutableStateOf("") }
 
     val context = LocalContext.current
-    val authViewModel: AuthViewModel = viewModel()
-
     val isLoading by authViewModel.isLoading
     val error by authViewModel.error
     val isLoggedIn by authViewModel.isLoggedIn
 
-    // 로그인 성공 시 메인 화면으로 이동
+    // ✅ 로그인 성공 시 자동 메인 화면 이동
     LaunchedEffect(isLoggedIn) {
         if (isLoggedIn) {
             navController.navigate("main") {
@@ -233,7 +231,7 @@ fun LoginScreen(navController: NavController) {
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // 비밀번호 입력
+            // Password 입력
             OutlinedTextField(
                 value = password,
                 onValueChange = { password = it },
@@ -247,10 +245,10 @@ fun LoginScreen(navController: NavController) {
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // 에러 메시지 표시
+            // ✅ 에러 메시지 표시
             if (error != null) {
                 Text(
-                    text = "오류: $error",
+                    text = error!!,
                     color = MaterialTheme.colorScheme.error,
                     modifier = Modifier
                         .fillMaxWidth()
@@ -259,13 +257,17 @@ fun LoginScreen(navController: NavController) {
                 )
             }
 
-            // 로그인 버튼
+            // ✅ 로그인 버튼 - AuthViewModel.login() 호출
             Button(
                 onClick = {
                     if (loginId.isNotEmpty() && password.isNotEmpty()) {
                         authViewModel.login(loginId, password)
                     } else {
-                        Toast.makeText(context, "Please enter LoginId and Password", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(
+                            context,
+                            "Please enter LoginId and Password",
+                            Toast.LENGTH_SHORT
+                        ).show()
                     }
                 },
                 modifier = Modifier
@@ -285,8 +287,7 @@ fun LoginScreen(navController: NavController) {
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // 회원가입 버튼
-            TextButton(onClick = { navController.navigate("sign_up") }) {
+            TextButton(onClick = { navController.navigate("signup") }) {
                 Text("Sign Up")
             }
         }
@@ -296,17 +297,26 @@ fun LoginScreen(navController: NavController) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SignUpScreen(navController: NavController) {
+fun SignUpScreen(navController: NavController, authViewModel: AuthViewModel = viewModel()) {
     var name by rememberSaveable { mutableStateOf("") }
     var loginId by rememberSaveable { mutableStateOf("") }
     var password by rememberSaveable { mutableStateOf("") }
     var passwordCheck by rememberSaveable { mutableStateOf("") }
 
     val context = LocalContext.current
-    val authViewModel: AuthViewModel = viewModel()
-
     val isLoading by authViewModel.isLoading
     val error by authViewModel.error
+    val isLoggedIn by authViewModel.isLoggedIn
+
+    // ✅ 회원가입 성공 시 자동 메인 화면 이동
+    LaunchedEffect(isLoggedIn) {
+        if (isLoggedIn) {
+            Toast.makeText(context, "회원가입 성공!", Toast.LENGTH_SHORT).show()
+            navController.navigate("main") {
+                popUpTo("signup") { inclusive = true }
+            }
+        }
+    }
 
     Scaffold { innerPadding ->
         Column(
@@ -320,7 +330,7 @@ fun SignUpScreen(navController: NavController) {
             Text(text = "ClosetCast Sign Up", fontSize = 28.sp)
             Spacer(modifier = Modifier.height(24.dp))
 
-            // 이름 입력
+            // Name 입력
             OutlinedTextField(
                 value = name,
                 onValueChange = { name = it },
@@ -346,7 +356,7 @@ fun SignUpScreen(navController: NavController) {
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // 비밀번호 입력
+            // Password 입력
             OutlinedTextField(
                 value = password,
                 onValueChange = { password = it },
@@ -360,7 +370,7 @@ fun SignUpScreen(navController: NavController) {
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // 비밀번호 확인
+            // Password Check 입력
             OutlinedTextField(
                 value = passwordCheck,
                 onValueChange = { passwordCheck = it },
@@ -374,10 +384,10 @@ fun SignUpScreen(navController: NavController) {
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // 에러 메시지
+            // ✅ 에러 메시지 표시
             if (error != null) {
                 Text(
-                    text = "오류: $error",
+                    text = error!!,
                     color = MaterialTheme.colorScheme.error,
                     modifier = Modifier
                         .fillMaxWidth()
@@ -386,7 +396,7 @@ fun SignUpScreen(navController: NavController) {
                 )
             }
 
-            // 회원가입 버튼
+            // ✅ 회원가입 버튼 - AuthViewModel.signUp() 호출
             Button(
                 onClick = {
                     if (name.isNotBlank() &&
@@ -394,18 +404,20 @@ fun SignUpScreen(navController: NavController) {
                         password.length >= 6 &&
                         password == passwordCheck) {
 
+                        // ✅ 실제 API 호출
                         authViewModel.signUp(
                             name = name,
                             loginId = loginId,
                             password = password,
-                            preference = "GENERAL",
-                            tendencies = listOf()
+                            preference = listOf("GENERAL"),  // 기본값
+                            tendencies = listOf("WARM")      // 기본값
                         )
-
-                        Toast.makeText(context, "회원가입이 완료되었습니다! 로그인하세요.", Toast.LENGTH_SHORT).show()
-                        navController.popBackStack()
                     } else {
-                        Toast.makeText(context, "정보를 확인해주세요.", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(
+                            context,
+                            "입력 정보를 확인해주세요. 비밀번호는 6자 이상이어야 합니다.",
+                            Toast.LENGTH_SHORT
+                        ).show()
                     }
                 },
                 modifier = Modifier
@@ -429,7 +441,6 @@ fun SignUpScreen(navController: NavController) {
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // 로그인 페이지로 돌아가기
             TextButton(onClick = { navController.popBackStack() }) {
                 Text("Already have an account? Login")
             }
@@ -447,23 +458,23 @@ sealed class BottomNavItem(val route: String, val title: String, val icon: Image
 
 data class CurrentWeather(
     val location: String,
-    val temperature: Int,
-    val apparentTemperature: Int,
+    val temperature: Double,
+    val apparentTemperature: Double,
     val weatherCondition: String,
-    val minTemp: Int,
-    val maxTemp: Int
+    val minTemp: Double,
+    val maxTemp: Double
 )
 
 data class HourlyForecast(
     val time: String,
-    val temperature: Int,
+    val temperature: Double,
     val weatherIcon: ImageVector
 )
 
 data class DailyForecast(
     val day: String,
-    val minTemp: Int,
-    val maxTemp: Int,
+    val minTemp: Double,
+    val maxTemp: Double,
     val weatherIcon: ImageVector
 )
 
@@ -554,7 +565,7 @@ fun DailyForecastCard(dailyForecasts: List<DailyForecast>) {
 }
 
 @Composable
-fun ApparentTemperatureCard(apparentTemperature: Int) {
+fun ApparentTemperatureCard(apparentTemperature: Double) {
     Card(
         modifier = Modifier
             .fillMaxWidth(0.8f)
@@ -632,8 +643,8 @@ fun ClothingRecommendationCard(recommendation: ClothingRecommendation) {
                 ) {
                     if (recommendation.top.lowercase() != "none") {
                         Image(
-                            painter = painterResource(getImageResourceForClothingName(recommendation.outer)),
-                            contentDescription = recommendation.outer,
+                            painter = painterResource(getImageResourceForClothingName(recommendation.top)),
+                            contentDescription = recommendation.top,
                             modifier = Modifier.size(80.dp)
                         )
                     }
@@ -653,8 +664,8 @@ fun ClothingRecommendationCard(recommendation: ClothingRecommendation) {
                 ) {
                     if (recommendation.bottom.lowercase() != "none") {
                         Image(
-                            painter = painterResource(getImageResourceForClothingName(recommendation.outer)),
-                            contentDescription = recommendation.outer,
+                            painter = painterResource(getImageResourceForClothingName(recommendation.bottom)),
+                            contentDescription = recommendation.bottom,
                             modifier = Modifier.size(80.dp)
                         )
                     }
@@ -686,43 +697,43 @@ fun getImageResourceForClothingName(name: String): Int {
     }
 }
 
-fun getRecommendationForTemperature(temp: Int): ClothingRecommendation {
+fun getRecommendationForTemperature(temp: Double): ClothingRecommendation {
     val topList: List<String>
     val outerList: List<String>
     val bottomList: List<String>
 
     when {
-        temp >= 28 -> {
+        temp >= 28.0 -> {
             outerList = listOf("None")
             topList = listOf("Short sleeve", "Sleeveless")
             bottomList = listOf("Shorts")
         }
-        temp in 23..27 -> {
+        temp in 23.0..27.0 -> {
             outerList = listOf("None")
             topList = listOf("Short sleeve", "Shirt")
             bottomList = listOf("Shorts", "Cotton pants")
         }
-        temp in 20..22 -> {
+        temp in 20.0..22.0 -> {
             outerList = listOf("Spring/Fall Jacket", "Blazer", "Cardigan", "Denim")
             topList = listOf("Shirt", "Long sleeve", "Sweater")
             bottomList = listOf("Jeans", "Cotton pants")
         }
-        temp in 17..19 -> {
+        temp in 17.0..19.0 -> {
             outerList = listOf("Sweatshirt", "Hoodie")
             topList = listOf("Shirt", "Sweater")
             bottomList = listOf("Jeans", "Cotton pants")
         }
-        temp in 12..16 -> {
+        temp in 12.0..16.0 -> {
             outerList = listOf("Leather Jacket", "Blouson", "Stadium Jacket", "Light Jacket", "Windbreaker")
             topList = listOf("Sweater", "Shirt")
             bottomList = listOf("Jeans", "Cotton pants")
         }
-        temp in 9..11 -> {
+        temp in 9.0..11.0 -> {
             outerList = listOf("Coat", "Trench coat", "Fleece")
             topList = listOf("Sweater")
             bottomList = listOf("Jeans", "Cotton pants")
         }
-        temp in 5..8 -> {
+        temp in 5.0..8.0 -> {
             outerList = listOf("Coat", "Puffer Jacket", "Fleece")
             topList = listOf("Sweatshirt", "Sweater")
             bottomList = listOf("Jeans", "Cotton pants")
@@ -856,12 +867,14 @@ fun WithdrawScreen(navController: NavController) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainScreen(navController: NavController) {
+fun MainScreen(navController: NavController, authViewModel: AuthViewModel = viewModel()) {
 
     val bottomBarNavController = rememberNavController()
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
+
+    val authViewModel: AuthViewModel = viewModel()
 
     val items = listOf(
         BottomNavItem.Weather,
@@ -872,9 +885,6 @@ fun MainScreen(navController: NavController) {
     val weatherData by weatherViewModel.weatherData
     val isLoading by weatherViewModel.isLoading
     val errorMessage by weatherViewModel.error
-
-    var latitude by remember { mutableDoubleStateOf(0.0) }
-    var longitude by remember { mutableDoubleStateOf(0.0) }
 
     // 앱 시작 시 위치 정보 요청
     LaunchedEffect(Unit) {
@@ -892,9 +902,9 @@ fun MainScreen(navController: NavController) {
     }
 
     val drawerItems = listOf(
-        "Edit Password" to "change_password",
-        "Edit My Closet" to "clothes_setting",
-        "Edit Personal Information" to "style_and_sensitivity?isSignUpProcess=false"
+        "Edit Password" to "changepassword",
+        "Edit My Closet" to "clothessetting",
+        "Edit Personal Information" to "styleandsensitivity?isSignUpProcess=false"
     )
 
     ModalNavigationDrawer(
@@ -902,6 +912,7 @@ fun MainScreen(navController: NavController) {
         drawerContent = {
             ModalDrawerSheet {
                 Spacer(Modifier.height(12.dp))
+
                 drawerItems.forEach { item ->
                     NavigationDrawerItem(
                         label = { Text(item.first) },
@@ -912,11 +923,15 @@ fun MainScreen(navController: NavController) {
                         }
                     )
                 }
+
                 HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+
+                // ✅ 로그아웃 버튼 - AuthViewModel.logout() 호출
                 NavigationDrawerItem(
                     label = { Text("Logout") },
                     selected = false,
                     onClick = {
+                        authViewModel.logout()
                         scope.launch { drawerState.close() }
                         navController.navigate("login") {
                             popUpTo(navController.graph.findStartDestination().id) {
@@ -925,6 +940,7 @@ fun MainScreen(navController: NavController) {
                         }
                     }
                 )
+
                 NavigationDrawerItem(
                     label = { Text("Account Withdrawal") },
                     selected = false,
@@ -1310,19 +1326,19 @@ fun ClothesSettingPreview() {
 fun WeatherScreenPreview() {
     // #TODO : 왜 Preview에서도 샘플 데이터가 쓰이는진 모르겠지만 여기도 수정 필요
     val sampleWeatherData = WeatherData(
-        current = CurrentWeather("Dongjak-gu, Sangdo 1-dong", 12, 10,"Clear", 11, 17),
+        current = CurrentWeather("Dongjak-gu, Sangdo 1-dong", 12.0, 10.0,"Clear", 11.0, 17.0),
         hourly = listOf(
-            HourlyForecast("2 PM", 12, Icons.Default.WbSunny),
-            HourlyForecast("3 PM", 12, Icons.Default.WbSunny),
-            HourlyForecast("4 PM", 11, Icons.Default.WbSunny),
-            HourlyForecast("5 PM", 11, Icons.Default.WbSunny),
-            HourlyForecast("6 PM", 11, Icons.Default.WbSunny),
-            HourlyForecast("7 PM", 11, Icons.Default.WbSunny)
+            HourlyForecast("2 PM", 12.0, Icons.Default.WbSunny),
+            HourlyForecast("3 PM", 12.0, Icons.Default.WbSunny),
+            HourlyForecast("4 PM", 11.0, Icons.Default.WbSunny),
+            HourlyForecast("5 PM", 11.0, Icons.Default.WbSunny),
+            HourlyForecast("6 PM", 11.0, Icons.Default.WbSunny),
+            HourlyForecast("7 PM", 11.0, Icons.Default.WbSunny)
         ),
         daily = listOf(
-            DailyForecast("Today", 11, 17, Icons.Default.WbSunny),
-            DailyForecast("Tomorrow", 10, 18, Icons.Default.WbSunny),
-            DailyForecast("Day After Tomorrow", 9, 16, Icons.Default.WbSunny)
+            DailyForecast("Today", 11.0, 17.0, Icons.Default.WbSunny),
+            DailyForecast("Tomorrow", 10.0, 18.0, Icons.Default.WbSunny),
+            DailyForecast("Day After Tomorrow", 9.0, 16.0, Icons.Default.WbSunny)
         )
     )
     ClosetCastTheme {
@@ -1342,7 +1358,7 @@ fun ChangePasswordScreenPreview() {
 @Composable
 fun ClothingRecommendationScreenPreview() {
     val sampleWeatherData = WeatherData(
-        current = CurrentWeather("Dongjak-gu, Sangdo 1-dong", 12, 10,"Clear", 11, 17),
+        current = CurrentWeather("Dongjak-gu, Sangdo 1-dong", 12.0, 10.0,"Clear", 11.0, 17.0),
         hourly = listOf(),
         daily = listOf()
     )

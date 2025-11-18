@@ -5,15 +5,14 @@ import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.closetcast.api.AuthApiService
 import com.example.closetcast.api.RetrofitClient
 import com.example.closetcast.api.SignInRequestDto
 import com.example.closetcast.api.SignUpRequestDto
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import retrofit2.HttpException
 
+// UI와 완전히 분리된 영역에서 로그인, 회원가입, 로그아웃 등 인증 관련 비즈니스 로직과 상태 관리
 class AuthViewModel : ViewModel() {
     private val _isLoading = mutableStateOf(false)
     val isLoading: State<Boolean> = _isLoading
