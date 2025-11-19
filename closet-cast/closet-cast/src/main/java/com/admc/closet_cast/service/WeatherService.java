@@ -4,6 +4,7 @@ import com.admc.closet_cast.dto.DailyWeatherDto;
 import com.admc.closet_cast.dto.HourlyWeatherDto;
 import com.admc.closet_cast.entity.HourlyWeather;
 import com.admc.closet_cast.entity.Weather;
+import com.admc.closet_cast.repository.HourlyWeatherRepository;
 import com.admc.closet_cast.repository.WeatherRepository;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -13,6 +14,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 @Service
@@ -20,6 +23,7 @@ import java.util.*;
 public class WeatherService {
     private final WebClient.Builder webClientBuilder;
     private final WeatherRepository weatherRepository;
+    private final HourlyWeatherRepository hourlyWeatherRepository;
 
     @Transactional
     public List<DailyWeatherDto> getForecast(String baseDate, String baseTime, int nx, int ny) {
@@ -148,5 +152,61 @@ public class WeatherService {
             e.printStackTrace();
             return Collections.emptyList();
         }
+    }
+
+    @Transactional(readOnly = true)
+    public List<DailyWeatherDto> getDailyWeather(String today) {
+        List<DailyWeatherDto> result = new ArrayList<>();
+        String tomorrow = getNextDate(today, 1);
+        String twoDay = getNextDate(today, 2);
+
+        Weather todayWeather = weatherRepository.findByDate(today).get();
+        Weather tomorrowWeather = weatherRepository.findByDate(tomorrow).get();
+        Weather twoDayWeather = weatherRepository.findByDate(twoDay).get();
+
+        List<HourlyWeatherDto> todayHourly = new ArrayList<>();
+        Map<String, Double> todayApparent = new HashMap<>();
+        List<HourlyWeatherDto> tomorrowHourly = new ArrayList<>();
+        Map<String, Double> tomorrowApparent = new HashMap<>();
+        List<HourlyWeatherDto> twoDayHourly = new ArrayList<>();
+        Map<String, Double> twoDayApparent = new HashMap<>();
+
+        List<HourlyWeather> todayHourlyWeather = hourlyWeatherRepository.findByWeather(todayWeather);
+        List<HourlyWeather> tomorrowHourlyWeather = hourlyWeatherRepository.findByWeather(tomorrowWeather);
+        List<HourlyWeather> twoDayHourlyWeather = hourlyWeatherRepository.findByWeather(twoDayWeather);
+
+        for (HourlyWeather hour : todayHourlyWeather) {
+            HourlyWeatherDto hourDto = new HourlyWeatherDto(hour.getFcstTime(), hour.getTemperature(), hour.getApparentTemp());
+            todayHourly.add(hourDto);
+            todayApparent.put(hour.getFcstTime(), hour.getApparentTemp());
+        }
+
+        for (HourlyWeather hour : tomorrowHourlyWeather) {
+            HourlyWeatherDto hourDto = new HourlyWeatherDto(hour.getFcstTime(), hour.getTemperature(), hour.getApparentTemp());
+            tomorrowHourly.add(hourDto);
+            tomorrowApparent.put(hour.getFcstTime(), hour.getApparentTemp());
+        }
+
+        for (HourlyWeather hour : twoDayHourlyWeather) {
+            HourlyWeatherDto hourDto = new HourlyWeatherDto(hour.getFcstTime(), hour.getTemperature(), hour.getApparentTemp());
+            twoDayHourly.add(hourDto);
+            twoDayApparent.put(hour.getFcstTime(), hour.getApparentTemp());
+        }
+
+        DailyWeatherDto todayWeatherDto = new DailyWeatherDto(todayWeather.getDate(), todayWeather.getTmx(), todayWeather.getTmn(), todayHourly, todayApparent);
+        DailyWeatherDto tomorrowWeatherDto = new DailyWeatherDto(tomorrowWeather.getDate(), tomorrowWeather.getTmx(), tomorrowWeather.getTmn(), tomorrowHourly, tomorrowApparent);
+        DailyWeatherDto twoDayWeatherDto = new DailyWeatherDto(twoDayWeather.getDate(), twoDayWeather.getTmx(),  twoDayWeather.getTmn(), twoDayHourly, twoDayApparent);
+        result.add(todayWeatherDto);
+        result.add(tomorrowWeatherDto);
+        result.add(twoDayWeatherDto);
+
+        return result;
+    }
+
+    private String getNextDate(String dateStr, int plusDays) {
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd");
+        LocalDate date = LocalDate.parse(dateStr, formatter);
+        LocalDate nextDate = date.plusDays(plusDays);
+        return nextDate.format(formatter);
     }
 }

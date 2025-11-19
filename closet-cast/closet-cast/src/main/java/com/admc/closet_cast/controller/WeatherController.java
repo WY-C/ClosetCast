@@ -37,4 +37,12 @@ public class WeatherController {
         String time = now.format(DateTimeFormatter.ofPattern("HHmm"));
         return ResponseEntity.ok(weatherService.getForecast(date, time, NX, NY));
     }
+
+    @Operation(summary = "날씨 정보 불러오기", description = "최근 3일 간의 날씨 정보를 불러옵니다.")
+    @GetMapping("/read")
+    public ResponseEntity<List<DailyWeatherDto>> readWeather() {
+        LocalDateTime now = LocalDateTime.now();
+        String date = now.format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+        return ResponseEntity.ok(weatherService.getDailyWeather(date));
+    }
 }
