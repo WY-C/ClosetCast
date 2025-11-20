@@ -78,7 +78,7 @@ public class MemberService {
 
         String token = jwtProvider.createToken(member.getLoginId());
 
-        return SignInResponseDto.of(String.valueOf(member.getId()), member.getName(), member.getLoginId(), token);
+        return SignInResponseDto.of(member.getId(),member.getName(), member.getLoginId(), token);
     }
 
     @Transactional(readOnly = true)
