@@ -18,7 +18,7 @@ data class DailyWeatherDto(
     @SerializedName("hourlyList") // 오늘 시간 별 온도, 체감 온도
     val hourlyList: List<HourlyWeatherDto>,
 
-    @SerializedName("apparentMap") // 현재 시간 체감 온도 배열 -> ? 뭔가 좀 이상함
+    @SerializedName("apparentMap") // 시간별 체감 온도 배열
     val apparentMap: Map<String, Double>
 )
 data class HourlyWeatherDto(
@@ -59,6 +59,8 @@ data class ApiResponseRecommendDto(
 )
 
 interface WeatherApiService {
+    @GET("/api/weather/read")
+    suspend fun readWeather(): List<DailyWeatherDto>
     @GET("/api/weather/get")
     suspend fun getWeather(): List<DailyWeatherDto>
 

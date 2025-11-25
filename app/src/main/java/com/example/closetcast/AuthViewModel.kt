@@ -12,6 +12,13 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
+
+data class TempSignUpInfo(
+    val name: String = "",
+    val loginId: String = "",
+    val password: String = ""
+)
+
 // UI와 완전히 분리된 영역에서 로그인, 회원가입, 로그아웃 등 인증 관련 비즈니스 로직과 상태 관리
 class AuthViewModel : ViewModel() {
     private val _isLoading = mutableStateOf(false)
@@ -25,6 +32,7 @@ class AuthViewModel : ViewModel() {
 
     private val _userInfo = mutableStateOf<String?>(null)
     val userInfo: State<String?> = _userInfo
+
 
     fun login(loginId: String, password: String) {
         viewModelScope.launch {
@@ -106,7 +114,7 @@ class AuthViewModel : ViewModel() {
                     withContext(Dispatchers.Main) {
                         // 예시: 사용자 정보 업데이트 및 로그인 상태를 true로 변경
                         _userInfo.value = result.name
-                        _isLoggedIn.value = true
+
                         _isLoading.value = false
                     }
 
@@ -144,4 +152,8 @@ class AuthViewModel : ViewModel() {
         }
     }
 
+    fun resetAuthState() {
+        _isLoggedIn.value = false
+        _error.value = null
+    }
 }

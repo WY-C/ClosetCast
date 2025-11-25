@@ -42,7 +42,7 @@ class WeatherViewModel : ViewModel() {
                     Log.d("WeatherViewModel", "Base URL: http://3.39.165.91:3000/")
 
                     // ✅ 수정: RetrofitClient.apiService 사용
-                    val responseList = RetrofitClient.apiService.getWeather()
+                    val responseList = RetrofitClient.apiService.readWeather()
 
                     Log.d("WeatherViewModel", "========== API 응답 받음 ==========")
                     Log.d("WeatherViewModel", "응답 배열 크기: ${responseList.size}")
@@ -100,14 +100,14 @@ class WeatherViewModel : ViewModel() {
                 HourlyForecast(
                     time = hourly.fcstTime, // ✅ fcstime → fcstTime으로 수정
                     temperature = hourly.temperature,
-                    weatherIcon = getWeatherIcon(hourly.temperature.toString())
+                    weatherIcon = readWeatherIcon(hourly.temperature.toString())
                 )
             },
             daily = listOf() // 일별 예보는 현재 API에서 제공되지 않음
         )
     }
 
-    private fun getWeatherIcon(description: String): ImageVector {
+    private fun readWeatherIcon(description: String): ImageVector {
         return when {
             description.contains("sunny", ignoreCase = true) ||
                     description.contains("clear", ignoreCase = true) -> Icons.Default.WbSunny

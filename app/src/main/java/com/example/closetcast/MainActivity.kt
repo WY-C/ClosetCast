@@ -4,6 +4,7 @@ import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
 import android.location.LocationManager
+import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
@@ -113,8 +114,9 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             ClosetCastTheme {
+                val authViewModel: AuthViewModel = viewModel()
                 Surface {
-                    AppNavigation()
+                    AppNavigation(authViewModel = authViewModel)
                 }
             }
         }
@@ -150,28 +152,54 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun AppNavigation() {
+fun AppNavigation(authViewModel: AuthViewModel) {
     val navController = rememberNavController()
     NavHost(navController = navController, startDestination = "login") {
         composable("login") {
             LoginScreen(navController = navController)
         }
-        composable("sign_up"){
+        composable("signup"){
             SignUpScreen(navController = navController)
         }
         composable("main") {
             MainScreen(navController = navController)
         }
         composable(
-            "style_and_sensitivity?isSignUpProcess={isSignUpProcess}",
-            arguments = listOf(navArgument("isSignUpProcess") {
-                type = NavType.BoolType
-                defaultValue = false
-            })
+            route = "styleandsensitivity?isSignUpProcess={isSignUpProcess}&name={name}&loginId={loginId}&password={password}",
+            arguments = listOf(
+                navArgument("isSignUpProcess") {
+                    type = NavType.BoolType
+                    defaultValue = false
+                },
+                navArgument("name") {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
+                },
+                navArgument("loginId") {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
+                },
+                navArgument("password") {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
+                }
+            )
         ) { backStackEntry ->
+            val isSignUpProcess = backStackEntry.arguments?.getBoolean("isSignUpProcess") ?: false
+            val name = backStackEntry.arguments?.getString("name")
+            val loginId = backStackEntry.arguments?.getString("loginId")
+            val password = backStackEntry.arguments?.getString("password")
+
             StyleAndSensitivityScreen(
                 navController = navController,
-                isSignUpProcess = backStackEntry.arguments?.getBoolean("isSignUpProcess") ?: false
+                authViewModel = authViewModel,
+                isSignUpProcess = isSignUpProcess,
+                signUpName = name,
+                signUpLoginId = loginId,
+                signUpPassword = password
             )
         }
         composable("clothes_setting") {
@@ -196,6 +224,11 @@ fun LoginScreen(navController: NavController, authViewModel: AuthViewModel = vie
     val isLoading by authViewModel.isLoading
     val error by authViewModel.error
     val isLoggedIn by authViewModel.isLoggedIn
+
+    // ✅ LoginScreen 진입 시 인증 상태 리셋 (처음 한 번만
+    LaunchedEffect(Unit) {
+        authViewModel.resetAuthState()
+    }
 
     // ✅ 로그인 성공 시 자동 메인 화면 이동
     LaunchedEffect(isLoggedIn) {
@@ -308,15 +341,6 @@ fun SignUpScreen(navController: NavController, authViewModel: AuthViewModel = vi
     val error by authViewModel.error
     val isLoggedIn by authViewModel.isLoggedIn
 
-    // ✅ 회원가입 성공 시 자동 메인 화면 이동
-    LaunchedEffect(isLoggedIn) {
-        if (isLoggedIn) {
-            Toast.makeText(context, "회원가입 성공!", Toast.LENGTH_SHORT).show()
-            navController.navigate("main") {
-                popUpTo("signup") { inclusive = true }
-            }
-        }
-    }
 
     Scaffold { innerPadding ->
         Column(
@@ -404,13 +428,12 @@ fun SignUpScreen(navController: NavController, authViewModel: AuthViewModel = vi
                         password.length >= 6 &&
                         password == passwordCheck) {
 
-                        // ✅ 실제 API 호출
-                        authViewModel.signUp(
-                            name = name,
-                            loginId = loginId,
-                            password = password,
-                            preference = listOf("GENERAL"),  // 기본값
-                            tendencies = listOf("WARM")      // 기본값
+                        // ✅ 스타일-민감도 화면으로 전환
+                        navController.navigate(
+                            "styleandsensitivity?isSignUpProcess=true" +
+                                    "&name=${Uri.encode(name)}" +
+                                    "&loginId=${Uri.encode(loginId)}" +
+                                    "&password=${Uri.encode(password)}"
                         )
                     } else {
                         Toast.makeText(
@@ -1076,13 +1099,40 @@ fun StyleSelectionItem(
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
-fun StyleAndSensitivityScreen(navController: NavController, isSignUpProcess: Boolean) {
+fun StyleAndSensitivityScreen(
+    navController: NavController,
+    authViewModel: AuthViewModel = viewModel(),
+    isSignUpProcess: Boolean = false,
+    signUpName: String? = null,
+    signUpLoginId: String? = null,
+    signUpPassword: String? = null
+) {
     var heatSensitive by rememberSaveable { mutableStateOf(false) }
     var coldSensitive by rememberSaveable { mutableStateOf(false) }
+
     val styles = listOf("Minimal", "Casual", "Street", "Classic", "Dandy", "Retro")
     val selectedStyles = rememberSaveable { mutableStateListOf<String>() }
 
     val context = LocalContext.current
+
+    val isLoading by authViewModel.isLoading
+    val error by authViewModel.error
+
+    // ✅ 회원가입 완료 추적 (버튼 클릭 여부)
+    var signUpRequested by rememberSaveable { mutableStateOf(false) }
+
+    // ✅ 회원가입 성공 시 로그인 화면으로 이동
+    // isLoading이 false가 되고, error가 null이고, signUpRequested가 true면 성공!
+    LaunchedEffect(isLoading, error) {
+        if (signUpRequested && !isLoading && error == null && isSignUpProcess) {
+            Toast.makeText(context, "회원가입 성공! 로그인해주세요.", Toast.LENGTH_SHORT).show()
+            navController.navigate("login") {
+                popUpTo(navController.graph.findStartDestination().id) {
+                    inclusive = true
+                }
+            }
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -1100,13 +1150,24 @@ fun StyleAndSensitivityScreen(navController: NavController, isSignUpProcess: Boo
         bottomBar = {
             Button(
                 onClick = {
-                    if (isSignUpProcess) {
-                        Toast.makeText(context, "Sign up completed.", Toast.LENGTH_SHORT).show()
-                        navController.navigate("login") {
-                            popUpTo(navController.graph.findStartDestination().id) {
-                                inclusive = true
-                            }
+                    if (isSignUpProcess && signUpName != null && signUpLoginId != null && signUpPassword != null) {
+                        val preference = selectedStyles.map { it.uppercase() }.ifEmpty { listOf("MINIMAL") }
+                        val tendencies = buildList {
+                            if (heatSensitive) add("HOT")
+                            if (coldSensitive) add("COLD")
+                            if (isEmpty()) add("NORMAL")
                         }
+
+                        // ✅ 회원가입 요청 플래그 설정
+                        signUpRequested = true
+
+                        authViewModel.signUp(
+                            name = signUpName,
+                            loginId = signUpLoginId,
+                            password = signUpPassword,
+                            preference = preference,
+                            tendencies = tendencies
+                        )
                     } else {
                         Toast.makeText(context, "Edit completed.", Toast.LENGTH_SHORT).show()
                         navController.popBackStack()
@@ -1114,12 +1175,21 @@ fun StyleAndSensitivityScreen(navController: NavController, isSignUpProcess: Boo
                 },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp)
+                    .padding(16.dp),
+                enabled = !isLoading
             ) {
-                Text(if (isSignUpProcess) "Done" else "Edit Complete")
+                if (isLoading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(24.dp),
+                        color = MaterialTheme.colorScheme.onPrimary
+                    )
+                } else {
+                    Text(if (isSignUpProcess) "Done" else "Edit Complete")
+                }
             }
         }
     ) { innerPadding ->
+        // ... 나머지 UI는 그대로 ...
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -1129,9 +1199,21 @@ fun StyleAndSensitivityScreen(navController: NavController, isSignUpProcess: Boo
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Spacer(modifier = Modifier.height(16.dp))
-            // Style Preference Section
+
+            if (error != null) {
+                Text(
+                    text = error!!,
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 16.dp),
+                    textAlign = TextAlign.Center
+                )
+            }
+
             Text("Choose your style preference", style = MaterialTheme.typography.headlineSmall)
             Spacer(modifier = Modifier.height(16.dp))
+
             FlowRow(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceEvenly,
@@ -1157,8 +1239,11 @@ fun StyleAndSensitivityScreen(navController: NavController, isSignUpProcess: Boo
             HorizontalDivider()
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Sensitivity Section
-            Text("Your sensitivity tendency", style = MaterialTheme.typography.headlineSmall, textAlign = TextAlign.Center)
+            Text(
+                "Your sensitivity tendency",
+                style = MaterialTheme.typography.headlineSmall,
+                textAlign = TextAlign.Center
+            )
             Spacer(modifier = Modifier.height(16.dp))
 
             Column(modifier = Modifier.padding(horizontal = 8.dp).widthIn(max = 400.dp)) {
@@ -1175,6 +1260,7 @@ fun StyleAndSensitivityScreen(navController: NavController, isSignUpProcess: Boo
                         onCheckedChange = { heatSensitive = it }
                     )
                 }
+
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -1189,10 +1275,13 @@ fun StyleAndSensitivityScreen(navController: NavController, isSignUpProcess: Boo
                     )
                 }
             }
+
             Spacer(modifier = Modifier.height(16.dp))
         }
     }
 }
+
+
 
 @Composable
 fun ClothingItem(name: String, isSelected: Boolean, onToggle: (Boolean) -> Unit) {
@@ -1301,7 +1390,14 @@ fun SignUpScreenPreview() {
 @Composable
 fun StyleAndSensitivityScreenPreview() {
     ClosetCastTheme {
-        StyleAndSensitivityScreen(navController = rememberNavController(), isSignUpProcess = true)
+        StyleAndSensitivityScreen(
+            navController = rememberNavController(),
+            authViewModel = viewModel(),
+            isSignUpProcess = true,
+            signUpName = "preview",
+            signUpLoginId = "preview",
+            signUpPassword = "preview"
+        )
     }
 }
 

@@ -19,7 +19,7 @@ data class SignInRequestDto(
 
 data class SignInResponseDto(
     @SerializedName("memberId")
-    val memberId: String, // 왜 여기서만 memberId가 String인가요?
+    val memberId: Long,
 
     @SerializedName("name")
     val name: String,
