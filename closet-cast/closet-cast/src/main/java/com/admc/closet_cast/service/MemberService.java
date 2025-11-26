@@ -29,11 +29,6 @@ public class MemberService {
     private final PasswordEncoder passwordEncoder;
     private final JwtProvider jwtProvider;
 
-    private final Map<String, Tendency> tendencyMap = Map.of(
-            "더위를 많이 타요.", Tendency.HOT,
-            "추위를 많이 타요.", Tendency.COLD
-    );
-
     @Transactional
     public SignUpResponseDto signUp(SignUpRequestDto signupDto) {
         if (memberRepository.existsByLoginId(signupDto.loginId())) {
@@ -41,23 +36,13 @@ public class MemberService {
         }
 
         String encodedPassword = passwordEncoder.encode(signupDto.password());
-        List<Tendency> tendencies = new ArrayList<>();
-        List<Preference> preferences = new ArrayList<>();
-
-        for (String tendency : signupDto.tendencies()) {
-            tendencies.add(tendencyMap.get(tendency));
-        }
-
-        for (String preference : signupDto.preference()) {
-            preferences.add(Preference.fromString(preference));
-        }
 
         Member member = Member.builder()
                 .name(signupDto.name())
                 .loginId(signupDto.loginId())
                 .password(encodedPassword)
-                .preference(preferences)
-                .tendencies(tendencies)
+                .preference(signupDto.preference())
+                .tendencies(signupDto.tendencies())
                 .build();
 
         memberRepository.save(member);
@@ -116,27 +101,13 @@ public class MemberService {
             member.setPassword(encodedPassword);
         }
         if (requestDto.preference() != null) {
-            List<Preference> preferences = new ArrayList<>();
-
-            for  (String preference : requestDto.preference()) {
-                preferences.add(Preference.fromString(preference));
-            }
-            member.setPreferences(preferences);
+            member.setPreferences(requestDto.preference());
         }
         if (requestDto.tendencies() != null) {
-            List<Tendency> tendencies = new ArrayList<>();
-
-            for (String tendency : requestDto.tendencies()) {
-                tendencies.add(tendencyMap.get(tendency));
-            }
-            member.setTendencies(tendencies);
+            member.setTendencies(requestDto.tendencies());
         }
         if (requestDto.clothes() != null) {
-            List<Cloth> clothes = new ArrayList<>();
-            for (String cloth : requestDto.clothes()) {
-                clothes.add(Cloth.valueOf(cloth));
-            }
-            member.setClothes(clothes);
+            member.setClothes(requestDto.clothes());
         }
 
         return MemberUpdateResponseDto.of(member.getId(), member.getPassword(), member.getPreferences(), member.getTendencies(), member.getClothes());
