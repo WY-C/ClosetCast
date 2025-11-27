@@ -218,34 +218,30 @@ class WeatherViewModel : ViewModel() {
 
 
     // 날짜를 요일로 변환
+    // 날짜를 Today/요일로 변환
     private fun formatDateToDay(dateStr: String, index: Int): String {
         return try {
-            val format = SimpleDateFormat("yyyyMMdd", Locale.getDefault())
-            val date = format.parse(dateStr) ?: return "Day ${index + 1}"
+            // 오늘 날짜를 서버와 같은 yyyyMMdd 포맷으로 계산 (KST 고정)
+            val dayFormat = SimpleDateFormat("yyyyMMdd", Locale.getDefault()).apply {
+                timeZone = TimeZone.getTimeZone("Asia/Seoul")
+            }
+            val todayStr = dayFormat.format(Date())   // 예: "20251127"
 
-            val calendar = Calendar.getInstance()
-            val today = calendar.clone() as Calendar
-            today.set(Calendar.HOUR_OF_DAY, 0)
-            today.set(Calendar.MINUTE, 0)
-            today.set(Calendar.SECOND, 0)
+            return when (dateStr) {
+                todayStr -> "Today"  // 🔹 서버 date == 오늘 문자열이면 Today
 
-            calendar.time = date
-            calendar.set(Calendar.HOUR_OF_DAY, 0)
-            calendar.set(Calendar.MINUTE, 0)
-            calendar.set(Calendar.SECOND, 0)
-
-            val diffDays = (calendar.timeInMillis - today.timeInMillis) / (24 * 60 * 60 * 1000)
-
-            when (diffDays) {
-                0L -> "Today"
-                1L -> "Tomorrow"
-                2L -> "Day After Tomorrow"
-                else -> SimpleDateFormat("EEEE", Locale.getDefault()).format(date)
+                else -> {
+                    // 그 외는 요일만 표시 (내일/모레 모두 Mon, Tue 등으로)
+                    val parseFormat = SimpleDateFormat("yyyyMMdd", Locale.getDefault())
+                    val date = parseFormat.parse(dateStr)
+                    SimpleDateFormat("EEE", Locale.getDefault()).format(date!!)
+                }
             }
         } catch (e: Exception) {
             "Day ${index + 1}"
         }
     }
+
 
     // 시간 포맷팅 (0500 -> "5 AM")
     private fun formatTime(fcstTime: String): String {

@@ -589,22 +589,52 @@ fun DailyForecastCard(dailyForecasts: List<DailyForecast>) {
     Column(modifier = Modifier.fillMaxWidth()) {
         Text(text = "3-Day Forecast", fontSize = 20.sp, fontWeight = FontWeight.Bold)
         Spacer(modifier = Modifier.height(8.dp))
+
         dailyForecasts.forEach { forecast ->
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(vertical = 8.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(text = forecast.day, fontSize = 16.sp)
-                Icon(forecast.weatherIcon, contentDescription = null, modifier = Modifier.size(32.dp))
-                Text(text = "Min: ${forecast.minTemp}°", fontSize = 16.sp)
-                Text(text = "Max: ${forecast.maxTemp}°", fontSize = 16.sp)
+                // 요일 / 날짜
+                Text(
+                    text = forecast.day,
+                    fontSize = 16.sp,
+                    modifier = Modifier.weight(1f)
+                )
+
+                // 아이콘
+                Box(
+                    modifier = Modifier
+                        .weight(1f),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        forecast.weatherIcon,
+                        contentDescription = null,
+                        modifier = Modifier.size(32.dp)
+                    )
+                }
+
+                // Min
+                Text(
+                    text = "Min: ${forecast.minTemp}°",
+                    fontSize = 16.sp,
+                    modifier = Modifier.weight(1f)
+                )
+
+                // Max
+                Text(
+                    text = "Max: ${forecast.maxTemp}°",
+                    fontSize = 16.sp,
+                    modifier = Modifier.weight(1f)
+                )
             }
         }
     }
 }
+
 
 @Composable
 fun ApparentTemperatureCard(apparentTemperature: Double) {
