@@ -130,6 +130,7 @@ class MainActivity : ComponentActivity() {
             Manifest.permission.ACCESS_COARSE_LOCATION
         )
 
+
         // 이미 권한이 있는지 확인
         val hasFineLocation = ContextCompat.checkSelfPermission(
             this, Manifest.permission.ACCESS_FINE_LOCATION
@@ -913,10 +914,9 @@ fun MainScreen(navController: NavController, authViewModel: AuthViewModel = view
     LaunchedEffect(Unit) {
         Log.d("MainScreen", "LaunchedEffect 시작")
         try {
-            val locationManager = LocationManager(context)
-            locationManager.requestLocationUpdates { lat, lng ->
+            val helper = LocationHelper(context)
+            helper.requestCurrentLocation { lat, lng ->
                 Log.d("MainScreen", "위치 정보 받음: lat=$lat, lng=$lng")
-                // fetchWeather에 파라미터 전달하지만 API는 파라미터를 무시함
                 weatherViewModel.fetchWeather(lat, lng)
             }
         } catch (e: Exception) {
