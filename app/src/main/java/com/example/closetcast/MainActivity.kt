@@ -203,10 +203,10 @@ fun AppNavigation(authViewModel: AuthViewModel) {
                 signUpPassword = password
             )
         }
-        composable("clothes_setting") {
+        composable("clothessetting") {
             ClothesSetting(navController = navController)
         }
-        composable("change_password") {
+        composable("changepassword") {
             ChangePasswordScreen(navController = navController)
         }
         composable("withdraw") {
@@ -327,7 +327,6 @@ fun LoginScreen(navController: NavController, authViewModel: AuthViewModel = vie
         }
     }
 }
-
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -472,8 +471,6 @@ fun SignUpScreen(navController: NavController, authViewModel: AuthViewModel = vi
     }
 }
 
-
-
 // Sealed class for Bottom Navigation items
 sealed class BottomNavItem(val route: String, val title: String, val icon: ImageVector) {
     object Weather : BottomNavItem("weather", "Weather", Icons.Filled.WbSunny)
@@ -509,433 +506,7 @@ data class WeatherData(
     val daily: List<DailyForecast>
 )
 
-@Composable
-fun WeatherScreen(weatherData: WeatherData) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
-            .verticalScroll(rememberScrollState()),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        CurrentWeatherCard(weatherData.current)
-        Spacer(modifier = Modifier.height(16.dp))
-        HourlyForecastCard(weatherData.hourly)
-        Spacer(modifier = Modifier.height(16.dp))
-        DailyForecastCard(weatherData.daily)
-    }
-}
-
-@Composable
-fun CurrentWeatherCard(currentWeather: CurrentWeather) {
-
-    val diffText = remember(currentWeather.temperature, currentWeather.yesterdaySameTimeTemp) {
-        val yesterday = currentWeather.yesterdaySameTimeTemp
-        if (yesterday == null) {
-            "No data for yesterday"
-        } else {
-            val diff = currentWeather.temperature - yesterday
-            val rounded = kotlin.math.round(diff * 10) / 10.0
-            when {
-                rounded > 0 -> "${rounded}° higher than yesterday"
-                rounded < 0 -> "${-rounded}° lower than yesterday"
-                else -> "Same as yesterday"
-            }
-        }
-    }
-
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Text(text = currentWeather.location, fontSize = 20.sp, fontWeight = FontWeight.Bold)
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(text = "${currentWeather.temperature}°", fontSize = 64.sp, fontWeight = FontWeight.Bold)
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(text = diffText, fontSize = 16.sp)   // 🔹 여기만 변경
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(text = "Min: ${currentWeather.minTemp}° Max: ${currentWeather.maxTemp}°", fontSize = 16.sp)
-        Spacer(modifier = Modifier.height(12.dp))
-        ApparentTemperatureCard(currentWeather.apparentTemperature)
-    }
-}
-
-
-@Composable
-fun HourlyForecastCard(hourlyForecasts: List<HourlyForecast>) {
-    Column(modifier = Modifier.fillMaxWidth()) {
-        Text(text = "Hourly Forecast", fontSize = 20.sp, fontWeight = FontWeight.Bold)
-        Spacer(modifier = Modifier.height(8.dp))
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceAround
-        ) {
-            hourlyForecasts.forEach { forecast ->
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(text = forecast.time, fontSize = 16.sp)
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Icon(forecast.weatherIcon, contentDescription = null, modifier = Modifier.size(32.dp))
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(text = "${forecast.temperature}°", fontSize = 16.sp)
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun DailyForecastCard(dailyForecasts: List<DailyForecast>) {
-    Column(modifier = Modifier.fillMaxWidth()) {
-        Text(text = "3-Day Forecast", fontSize = 20.sp, fontWeight = FontWeight.Bold)
-        Spacer(modifier = Modifier.height(8.dp))
-
-        dailyForecasts.forEach { forecast ->
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                // 요일 / 날짜
-                Text(
-                    text = forecast.day,
-                    fontSize = 16.sp,
-                    modifier = Modifier.weight(1f)
-                )
-
-                // 아이콘
-                Box(
-                    modifier = Modifier
-                        .weight(1f),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        forecast.weatherIcon,
-                        contentDescription = null,
-                        modifier = Modifier.size(32.dp)
-                    )
-                }
-
-                // Min
-                Text(
-                    text = "Min: ${forecast.minTemp}°",
-                    fontSize = 16.sp,
-                    modifier = Modifier.weight(1f)
-                )
-
-                // Max
-                Text(
-                    text = "Max: ${forecast.maxTemp}°",
-                    fontSize = 16.sp,
-                    modifier = Modifier.weight(1f)
-                )
-            }
-        }
-    }
-}
-
-
-@Composable
-fun ApparentTemperatureCard(apparentTemperature: Double) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth(0.8f)
-            .padding(8.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-        )
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(
-                text = "Feels Like",
-                fontSize = 14.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = "$apparentTemperature°",
-                fontSize = 28.sp,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary
-            )
-        }
-    }
-}
-
 data class ClothingRecommendation(val outer: String, val top: String, val bottom: String)
-
-@Composable
-fun ClothingRecommendationCard(recommendation: ClothingRecommendation) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Row(
-            horizontalArrangement = Arrangement.SpaceEvenly,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            // Outer Wear Card
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(text = "Outer", style = MaterialTheme.typography.titleMedium)
-                Box(
-                    modifier = Modifier
-                        .size(120.dp)
-                        .background(MaterialTheme.colorScheme.secondaryContainer, shape = CircleShape),
-                    contentAlignment = Alignment.Center
-                ) {
-                    if (recommendation.outer.lowercase() != "none") {
-                        Image(
-                            painter = painterResource(getImageResourceForClothingName(recommendation.outer)),
-                            contentDescription = recommendation.outer,
-                            modifier = Modifier.size(80.dp)
-                        )
-                    }
-                }
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(text = recommendation.outer, style = MaterialTheme.typography.bodyLarge)
-            }
-            // Top Wear Card
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(text = "Top", style = MaterialTheme.typography.titleMedium)
-                Box(
-                    modifier = Modifier
-                        .size(120.dp)
-                        .background(MaterialTheme.colorScheme.secondaryContainer, shape = CircleShape),
-                    contentAlignment = Alignment.Center
-                ) {
-                    if (recommendation.top.lowercase() != "none") {
-                        Image(
-                            painter = painterResource(getImageResourceForClothingName(recommendation.top)),
-                            contentDescription = recommendation.top,
-                            modifier = Modifier.size(80.dp)
-                        )
-                    }
-                }
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(text = recommendation.top, style = MaterialTheme.typography.bodyLarge)
-            }
-
-            // Bottom Wear Card (여기 추가)
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(text = "Bottom", style = MaterialTheme.typography.titleMedium)
-                Box(
-                    modifier = Modifier
-                        .size(120.dp)
-                        .background(MaterialTheme.colorScheme.secondaryContainer, shape = CircleShape),
-                    contentAlignment = Alignment.Center
-                ) {
-                    if (recommendation.bottom.lowercase() != "none") {
-                        Image(
-                            painter = painterResource(getImageResourceForClothingName(recommendation.bottom)),
-                            contentDescription = recommendation.bottom,
-                            modifier = Modifier.size(80.dp)
-                        )
-                    }
-                }
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(text = recommendation.bottom, style = MaterialTheme.typography.bodyLarge)
-            }
-        }
-        Spacer(modifier = Modifier.height(24.dp))
-        OutlinedButton(onClick = { /* TODO */ }) {
-            Text("View Other Recommendations")
-        }
-    }
-}
-
-fun getImageResourceForClothingName(name: String): Int {
-    return when (name.trim().lowercase()) {
-        "puffer jacket" -> R.drawable.puffer_coat
-        "coat" -> R.drawable.trench_coat
-        "fleece" -> R.drawable.fleece
-        "sweater" -> R.drawable.sweater
-        "hoodie" -> R.drawable.hoodie
-        "short sleeve" -> R.drawable.short_sleeves
-        "long sleeve" -> R.drawable.long_sleeves
-        "jeans" -> R.drawable.jeans
-        "cotton pants" -> R.drawable.trouser
-        "shorts" -> R.drawable.shorts
-        else -> R.drawable.default_clothing // default image
-    }
-}
-
-fun getRecommendationForTemperature(temp: Double): ClothingRecommendation {
-    val topList: List<String>
-    val outerList: List<String>
-    val bottomList: List<String>
-
-    when {
-        temp >= 28.0 -> {
-            outerList = listOf("None")
-            topList = listOf("Short sleeve", "Sleeveless")
-            bottomList = listOf("Shorts")
-        }
-        temp in 23.0..27.0 -> {
-            outerList = listOf("None")
-            topList = listOf("Short sleeve", "Shirt")
-            bottomList = listOf("Shorts", "Cotton pants")
-        }
-        temp in 20.0..22.0 -> {
-            outerList = listOf("Spring/Fall Jacket", "Blazer", "Cardigan", "Denim")
-            topList = listOf("Shirt", "Long sleeve", "Sweater")
-            bottomList = listOf("Jeans", "Cotton pants")
-        }
-        temp in 17.0..19.0 -> {
-            outerList = listOf("Sweatshirt", "Hoodie")
-            topList = listOf("Shirt", "Sweater")
-            bottomList = listOf("Jeans", "Cotton pants")
-        }
-        temp in 12.0..16.0 -> {
-            outerList = listOf("Leather Jacket", "Blouson", "Stadium Jacket", "Light Jacket", "Windbreaker")
-            topList = listOf("Sweater", "Shirt")
-            bottomList = listOf("Jeans", "Cotton pants")
-        }
-        temp in 9.0..11.0 -> {
-            outerList = listOf("Coat", "Trench coat", "Fleece")
-            topList = listOf("Sweater")
-            bottomList = listOf("Jeans", "Cotton pants")
-        }
-        temp in 5.0..8.0 -> {
-            outerList = listOf("Coat", "Puffer Jacket", "Fleece")
-            topList = listOf("Sweatshirt", "Sweater")
-            bottomList = listOf("Jeans", "Cotton pants")
-        }
-        else -> {
-            outerList = listOf("Puffer Jacket (Short, Long)", "Heavy outer")
-            topList = listOf("Sweater", "Hoodie")
-            bottomList = listOf("Jeans", "Cotton pants")
-        }
-    }
-
-    val outer = outerList[Random.nextInt(outerList.size)]
-    val top = topList[Random.nextInt(topList.size)]
-    val bottom = bottomList[Random.nextInt(bottomList.size)]
-
-    return ClothingRecommendation(outer, top, bottom)
-}
-
-
-@Composable
-fun ClothingRecommendationScreen(weatherData: WeatherData) {
-    val recommendation = getRecommendationForTemperature(weatherData.current.temperature)
-    ClothingRecommendationCard(recommendation)
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun ChangePasswordScreen(navController: NavController) {
-    var oldPassword by rememberSaveable { mutableStateOf("") }
-    var newPassword by rememberSaveable { mutableStateOf("") }
-    var confirmPassword by rememberSaveable { mutableStateOf("") }
-
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Edit Password") },
-                navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Previous")
-                    }
-                }
-            )
-        }
-    ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-                .padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            OutlinedTextField(
-                value = oldPassword,
-                onValueChange = { oldPassword = it },
-                label = { Text("Current Password") },
-                visualTransformation = PasswordVisualTransformation(),
-                modifier = Modifier.fillMaxWidth()
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-            OutlinedTextField(
-                value = newPassword,
-                onValueChange = { newPassword = it },
-                label = { Text("New Password") },
-                visualTransformation = PasswordVisualTransformation(),
-                modifier = Modifier.fillMaxWidth()
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-            OutlinedTextField(
-                value = confirmPassword,
-                onValueChange = { confirmPassword = it },
-                label = { Text("Confirm New Password") },
-                visualTransformation = PasswordVisualTransformation(),
-                modifier = Modifier.fillMaxWidth()
-            )
-            Spacer(modifier = Modifier.height(24.dp))
-            Button(
-                onClick = {
-                    // Add password change logic here
-                    navController.popBackStack()
-                },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("Change Password")
-            }
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun WithdrawScreen(navController: NavController) {
-    val context = LocalContext.current
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Account Withdrawal") },
-                navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Previous")
-                    }
-                }
-            )
-        }
-    ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-                .padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            Text("Are you sure you want to withdraw?", fontSize = 20.sp)
-            Spacer(modifier = Modifier.height(24.dp))
-            Button(
-                onClick = {
-                    Toast.makeText(context, "Account withdrawal completed.", Toast.LENGTH_SHORT).show()
-                    navController.navigate("login") {
-                        popUpTo(navController.graph.findStartDestination().id) {
-                            inclusive = true
-                        }
-                    }
-                },
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
-            ) {
-                Text("Account Withdrawal")
-            }
-        }
-    }
-}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -1109,6 +680,429 @@ fun MainScreen(navController: NavController, authViewModel: AuthViewModel = view
                         }
                     }
                 }
+            }
+        }
+    }
+}
+
+@Composable
+fun WeatherScreen(weatherData: WeatherData) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+            .verticalScroll(rememberScrollState()),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        CurrentWeatherCard(weatherData.current)
+        Spacer(modifier = Modifier.height(16.dp))
+        HourlyForecastCard(weatherData.hourly)
+        Spacer(modifier = Modifier.height(16.dp))
+        DailyForecastCard(weatherData.daily)
+    }
+}
+
+@Composable
+fun CurrentWeatherCard(currentWeather: CurrentWeather) {
+
+    val diffText = remember(currentWeather.temperature, currentWeather.yesterdaySameTimeTemp) {
+        val yesterday = currentWeather.yesterdaySameTimeTemp
+        if (yesterday == null) {
+            "No data for yesterday"
+        } else {
+            val diff = currentWeather.temperature - yesterday
+            val rounded = kotlin.math.round(diff * 10) / 10.0
+            when {
+                rounded > 0 -> "${rounded}° higher than yesterday"
+                rounded < 0 -> "${-rounded}° lower than yesterday"
+                else -> "Same as yesterday"
+            }
+        }
+    }
+
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Text(text = currentWeather.location, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(text = "${currentWeather.temperature}°", fontSize = 64.sp, fontWeight = FontWeight.Bold)
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(text = diffText, fontSize = 16.sp)   // 🔹 여기만 변경
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(text = "Min: ${currentWeather.minTemp}° Max: ${currentWeather.maxTemp}°", fontSize = 16.sp)
+        Spacer(modifier = Modifier.height(12.dp))
+        ApparentTemperatureCard(currentWeather.apparentTemperature)
+    }
+}
+
+@Composable
+fun HourlyForecastCard(hourlyForecasts: List<HourlyForecast>) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Text(text = "Hourly Forecast", fontSize = 20.sp, fontWeight = FontWeight.Bold)
+        Spacer(modifier = Modifier.height(8.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceAround
+        ) {
+            hourlyForecasts.forEach { forecast ->
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(text = forecast.time, fontSize = 16.sp)
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Icon(forecast.weatherIcon, contentDescription = null, modifier = Modifier.size(32.dp))
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(text = "${forecast.temperature}°", fontSize = 16.sp)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun DailyForecastCard(dailyForecasts: List<DailyForecast>) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Text(text = "3-Day Forecast", fontSize = 20.sp, fontWeight = FontWeight.Bold)
+        Spacer(modifier = Modifier.height(8.dp))
+
+        dailyForecasts.forEach { forecast ->
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // 요일 / 날짜
+                Text(
+                    text = forecast.day,
+                    fontSize = 16.sp,
+                    modifier = Modifier.weight(1f)
+                )
+
+                // 아이콘
+                Box(
+                    modifier = Modifier
+                        .weight(1f),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        forecast.weatherIcon,
+                        contentDescription = null,
+                        modifier = Modifier.size(32.dp)
+                    )
+                }
+
+                // Min
+                Text(
+                    text = "Min: ${forecast.minTemp}°",
+                    fontSize = 16.sp,
+                    modifier = Modifier.weight(1f)
+                )
+
+                // Max
+                Text(
+                    text = "Max: ${forecast.maxTemp}°",
+                    fontSize = 16.sp,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun ApparentTemperatureCard(apparentTemperature: Double) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth(0.8f)
+            .padding(8.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
+        )
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = "Feels Like",
+                fontSize = 14.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = "$apparentTemperature°",
+                fontSize = 28.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary
+            )
+        }
+    }
+}
+
+@Composable
+fun ClothingRecommendationCard(recommendation: ClothingRecommendation) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Row(
+            horizontalArrangement = Arrangement.SpaceEvenly,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            // Outer Wear Card
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(text = "Outer", style = MaterialTheme.typography.titleMedium)
+                Box(
+                    modifier = Modifier
+                        .size(120.dp)
+                        .background(MaterialTheme.colorScheme.secondaryContainer, shape = CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (recommendation.outer.lowercase() != "none") {
+                        Image(
+                            painter = painterResource(getImageResourceForClothingName(recommendation.outer)),
+                            contentDescription = recommendation.outer,
+                            modifier = Modifier.size(80.dp)
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(text = recommendation.outer, style = MaterialTheme.typography.bodyLarge)
+            }
+            // Top Wear Card
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(text = "Top", style = MaterialTheme.typography.titleMedium)
+                Box(
+                    modifier = Modifier
+                        .size(120.dp)
+                        .background(MaterialTheme.colorScheme.secondaryContainer, shape = CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (recommendation.top.lowercase() != "none") {
+                        Image(
+                            painter = painterResource(getImageResourceForClothingName(recommendation.top)),
+                            contentDescription = recommendation.top,
+                            modifier = Modifier.size(80.dp)
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(text = recommendation.top, style = MaterialTheme.typography.bodyLarge)
+            }
+
+            // Bottom Wear Card (여기 추가)
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(text = "Bottom", style = MaterialTheme.typography.titleMedium)
+                Box(
+                    modifier = Modifier
+                        .size(120.dp)
+                        .background(MaterialTheme.colorScheme.secondaryContainer, shape = CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (recommendation.bottom.lowercase() != "none") {
+                        Image(
+                            painter = painterResource(getImageResourceForClothingName(recommendation.bottom)),
+                            contentDescription = recommendation.bottom,
+                            modifier = Modifier.size(80.dp)
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(text = recommendation.bottom, style = MaterialTheme.typography.bodyLarge)
+            }
+        }
+        Spacer(modifier = Modifier.height(24.dp))
+        OutlinedButton(onClick = { /* TODO */ }) {
+            Text("View Other Recommendations")
+        }
+    }
+}
+
+fun getImageResourceForClothingName(name: String): Int {
+    return when (name.trim().lowercase()) {
+        "puffer jacket" -> R.drawable.puffer_coat
+        "coat" -> R.drawable.trench_coat
+        "fleece" -> R.drawable.fleece
+        "sweater" -> R.drawable.sweater
+        "hoodie" -> R.drawable.hoodie
+        "short sleeve" -> R.drawable.short_sleeves
+        "long sleeve" -> R.drawable.long_sleeves
+        "jeans" -> R.drawable.jeans
+        "cotton pants" -> R.drawable.trouser
+        "shorts" -> R.drawable.shorts
+        else -> R.drawable.default_clothing // default image
+    }
+}
+
+fun getRecommendationForTemperature(temp: Double): ClothingRecommendation {
+    val topList: List<String>
+    val outerList: List<String>
+    val bottomList: List<String>
+
+    when {
+        temp >= 28.0 -> {
+            outerList = listOf("None")
+            topList = listOf("Short sleeve", "Sleeveless")
+            bottomList = listOf("Shorts")
+        }
+        temp in 23.0..27.0 -> {
+            outerList = listOf("None")
+            topList = listOf("Short sleeve", "Shirt")
+            bottomList = listOf("Shorts", "Cotton pants")
+        }
+        temp in 20.0..22.0 -> {
+            outerList = listOf("Spring/Fall Jacket", "Blazer", "Cardigan", "Denim")
+            topList = listOf("Shirt", "Long sleeve", "Sweater")
+            bottomList = listOf("Jeans", "Cotton pants")
+        }
+        temp in 17.0..19.0 -> {
+            outerList = listOf("Sweatshirt", "Hoodie")
+            topList = listOf("Shirt", "Sweater")
+            bottomList = listOf("Jeans", "Cotton pants")
+        }
+        temp in 12.0..16.0 -> {
+            outerList = listOf("Leather Jacket", "Blouson", "Stadium Jacket", "Light Jacket", "Windbreaker")
+            topList = listOf("Sweater", "Shirt")
+            bottomList = listOf("Jeans", "Cotton pants")
+        }
+        temp in 9.0..11.0 -> {
+            outerList = listOf("Coat", "Trench coat", "Fleece")
+            topList = listOf("Sweater")
+            bottomList = listOf("Jeans", "Cotton pants")
+        }
+        temp in 5.0..8.0 -> {
+            outerList = listOf("Coat", "Puffer Jacket", "Fleece")
+            topList = listOf("Sweatshirt", "Sweater")
+            bottomList = listOf("Jeans", "Cotton pants")
+        }
+        else -> {
+            outerList = listOf("Puffer Jacket (Short, Long)", "Heavy outer")
+            topList = listOf("Sweater", "Hoodie")
+            bottomList = listOf("Jeans", "Cotton pants")
+        }
+    }
+
+    val outer = outerList[Random.nextInt(outerList.size)]
+    val top = topList[Random.nextInt(topList.size)]
+    val bottom = bottomList[Random.nextInt(bottomList.size)]
+
+    return ClothingRecommendation(outer, top, bottom)
+}
+
+@Composable
+fun ClothingRecommendationScreen(weatherData: WeatherData) {
+    val recommendation = getRecommendationForTemperature(weatherData.current.temperature)
+    ClothingRecommendationCard(recommendation)
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ChangePasswordScreen(navController: NavController) {
+    var oldPassword by rememberSaveable { mutableStateOf("") }
+    var newPassword by rememberSaveable { mutableStateOf("") }
+    var confirmPassword by rememberSaveable { mutableStateOf("") }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Edit Password") },
+                navigationIcon = {
+                    IconButton(onClick = { navController.popBackStack() }) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Previous")
+                    }
+                }
+            )
+        }
+    ) { innerPadding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+                .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            OutlinedTextField(
+                value = oldPassword,
+                onValueChange = { oldPassword = it },
+                label = { Text("Current Password") },
+                visualTransformation = PasswordVisualTransformation(),
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            OutlinedTextField(
+                value = newPassword,
+                onValueChange = { newPassword = it },
+                label = { Text("New Password") },
+                visualTransformation = PasswordVisualTransformation(),
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            OutlinedTextField(
+                value = confirmPassword,
+                onValueChange = { confirmPassword = it },
+                label = { Text("Confirm New Password") },
+                visualTransformation = PasswordVisualTransformation(),
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(modifier = Modifier.height(24.dp))
+            Button(
+                onClick = {
+                    // Add password change logic here
+                    navController.popBackStack()
+                },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Change Password")
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun WithdrawScreen(navController: NavController) {
+    val context = LocalContext.current
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Account Withdrawal") },
+                navigationIcon = {
+                    IconButton(onClick = { navController.popBackStack() }) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Previous")
+                    }
+                }
+            )
+        }
+    ) { innerPadding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+                .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Text("Are you sure you want to withdraw?", fontSize = 20.sp)
+            Spacer(modifier = Modifier.height(24.dp))
+            Button(
+                onClick = {
+                    Toast.makeText(context, "Account withdrawal completed.", Toast.LENGTH_SHORT).show()
+                    navController.navigate("login") {
+                        popUpTo(navController.graph.findStartDestination().id) {
+                            inclusive = true
+                        }
+                    }
+                },
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+            ) {
+                Text("Account Withdrawal")
             }
         }
     }
