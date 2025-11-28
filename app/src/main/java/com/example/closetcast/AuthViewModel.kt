@@ -5,9 +5,7 @@ import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.closetcast.api.RetrofitClient
-import com.example.closetcast.api.SignInRequestDto
-import com.example.closetcast.api.SignUpRequestDto
+import com.example.closetcast.api.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -156,4 +154,139 @@ class AuthViewModel : ViewModel() {
         _isLoggedIn.value = false
         _error.value = null
     }
+
+    // ===== 1. 유저 정보 업데이트 (필수) =====
+    fun updateMember(
+        memberId: Long,
+        password: String,
+        preference: List<String>,
+        tendencies: List<String>,
+        clothes: List<String>
+    ) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            _error.value = null
+
+            try {
+                val request = MemberUpdateRequestDto(
+                    password = password,
+                    preference = preference,
+                    tendencies = tendencies,
+                    clothes = clothes
+                )
+
+                val response = withContext(Dispatchers.IO) {
+                    RetrofitClient.authApiService.updateMember(memberId, request)
+                }
+
+                withContext(Dispatchers.Main) {
+                    if (response.isSuccess) {
+                        _userInfo.value = response.result.memberId.toString()
+                        _isLoading.value = false
+                        // 성공 토스트 메시지는 화면에서 처리
+                    } else {
+                        _error.value = response.message ?: "Update failed"
+                        _isLoading.value = false
+                    }
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    _error.value = "Error during update: ${e.localizedMessage}"
+                    _isLoading.value = false
+                }
+            }
+        }
+    }
+
+    // ===== 2. 특정 사용자 조회 =====
+    fun readMember(memberId: Long) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            _error.value = null
+
+            try {
+                val response = withContext(Dispatchers.IO) {
+                    RetrofitClient.authApiService.readMember(memberId)
+                }
+
+                withContext(Dispatchers.Main) {
+                    if (response.isSuccess) {
+                        val member = response.result
+                        _userInfo.value = "${member.name} (${member.loginId})"
+                        _isLoading.value = false
+                    } else {
+                        _error.value = response.message ?: "Failed to read member"
+                        _isLoading.value = false
+                    }
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    _error.value = "Error reading member: ${e.localizedMessage}"
+                    _isLoading.value = false
+                }
+            }
+        }
+    }
+
+    // ===== 3. 모든 사용자 조회 (관리자용) =====
+    private val _memberList = mutableStateOf<List<MemberDto>>(emptyList())
+    val memberList: State<List<MemberDto>> = _memberList
+
+    fun readListMember() {
+        viewModelScope.launch {
+            _isLoading.value = true
+            _error.value = null
+
+            try {
+                val response = withContext(Dispatchers.IO) {
+                    RetrofitClient.authApiService.readListMember()
+                }
+
+                withContext(Dispatchers.Main) {
+                    if (response.isSuccess) {
+                        _memberList.value = response.result
+                        _isLoading.value = false
+                    } else {
+                        _error.value = response.message ?: "Failed to read member list"
+                        _isLoading.value = false
+                    }
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    _error.value = "Error reading member list: ${e.localizedMessage}"
+                    _isLoading.value = false
+                }
+            }
+        }
+    }
+
+    // ===== 4. 회원탈퇴 =====
+    fun deleteMember(memberId: Long) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            _error.value = null
+
+            try {
+                val response = withContext(Dispatchers.IO) {
+                    RetrofitClient.authApiService.deleteMember(memberId)
+                }
+
+                withContext(Dispatchers.Main) {
+                    if (response.isSuccess) {
+                        // 탈퇴 성공 시 로그아웃 처리
+                        logout()
+                    } else {
+                        _error.value = response.message ?: "Failed to delete member"
+                        _isLoading.value = false
+                    }
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    _error.value = "Error deleting member: ${e.localizedMessage}"
+                    _isLoading.value = false
+                }
+            }
+        }
+    }
+
 }
