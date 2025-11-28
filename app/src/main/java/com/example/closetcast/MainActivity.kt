@@ -42,6 +42,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.layout.ContentScale
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
@@ -1131,11 +1132,35 @@ fun StyleSelectionItem(
                 modifier = Modifier
                     .size(100.dp)
                     .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.secondaryContainer)
-            )
+                    .background(
+                        if (isSelected) MaterialTheme.colorScheme.primaryContainer
+                        else MaterialTheme.colorScheme.secondaryContainer
+                    )
+            ) {
+                // 스타일별 이미지 추가
+                Image(
+                    painter = painterResource(getStyleImageResource(style)),
+                    contentDescription = style,
+                    modifier = Modifier
+                        .fillMaxSize(),          // Box 크기에 꽉 차게
+                    contentScale = ContentScale.Crop   // 비율 유지하며 잘라서 채우기
+                )
+            }
         }
         Spacer(modifier = Modifier.height(4.dp))
         Text(text = style, style = MaterialTheme.typography.bodyLarge)
+    }
+}
+
+fun getStyleImageResource(style: String): Int {
+    return when (style.trim().lowercase()) {
+        "minimal" -> R.drawable.minimal
+        "casual" -> R.drawable.casual
+        "street" -> R.drawable.street
+        "classic" -> R.drawable.classic
+        "dandy" -> R.drawable.dandy
+        "retro" -> R.drawable.retro
+        else -> R.drawable.default_clothing
     }
 }
 
