@@ -158,7 +158,7 @@ fun AppNavigation(authViewModel: AuthViewModel) {
     val navController = rememberNavController()
     NavHost(navController = navController, startDestination = "login") {
         composable("login") {
-            LoginScreen(navController = navController)
+            LoginScreen(navController = navController, authViewModel = authViewModel)
         }
         composable("signup"){
             SignUpScreen(navController = navController)
@@ -208,7 +208,10 @@ fun AppNavigation(authViewModel: AuthViewModel) {
             ClothesSetting(navController = navController)
         }
         composable("changepassword") {
-            ChangePasswordScreen(navController = navController)
+            ChangePasswordScreen(
+                navController = navController,
+                authViewModel = authViewModel
+            )
         }
         composable("withdraw") {
             WithdrawScreen(navController = navController)
@@ -218,7 +221,7 @@ fun AppNavigation(authViewModel: AuthViewModel) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun LoginScreen(navController: NavController, authViewModel: AuthViewModel = viewModel()) {
+fun LoginScreen(navController: NavController, authViewModel: AuthViewModel) {
     var loginId by rememberSaveable { mutableStateOf("") }
     var password by rememberSaveable { mutableStateOf("") }
 
@@ -747,7 +750,9 @@ fun HourlyForecastCard(hourlyForecasts: List<HourlyForecast>) {
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceAround
         ) {
-            hourlyForecasts.forEach { forecast ->
+            hourlyForecasts
+                .take(6)
+                .forEach { forecast ->
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(text = forecast.time, fontSize = 16.sp)
                     Spacer(modifier = Modifier.height(4.dp))
@@ -1005,10 +1010,18 @@ fun ClothingRecommendationScreen(weatherData: WeatherData) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ChangePasswordScreen(navController: NavController) {
+fun ChangePasswordScreen(
+    navController: NavController,
+    authViewModel: AuthViewModel   // ✅ ViewModel 주입
+) {
     var oldPassword by rememberSaveable { mutableStateOf("") }
     var newPassword by rememberSaveable { mutableStateOf("") }
     var confirmPassword by rememberSaveable { mutableStateOf("") }
+
+    val context = LocalContext.current
+    val isLoading by authViewModel.isLoading
+    val error by authViewModel.error
+    val memberId by authViewModel.memberId
 
     Scaffold(
         topBar = {
@@ -1016,7 +1029,10 @@ fun ChangePasswordScreen(navController: NavController) {
                 title = { Text("Edit Password") },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Previous")
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Previous"
+                        )
                     }
                 }
             )
@@ -1026,45 +1042,117 @@ fun ChangePasswordScreen(navController: NavController) {
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .padding(16.dp),
+                .padding(16.dp)
+                .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            // 에러 메시지
+            if (error != null) {
+                Text(
+                    text = "오류: $error",
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 16.dp),
+                    textAlign = TextAlign.Center
+                )
+            }
+
             OutlinedTextField(
                 value = oldPassword,
                 onValueChange = { oldPassword = it },
                 label = { Text("Current Password") },
                 visualTransformation = PasswordVisualTransformation(),
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                enabled = !isLoading,
+                singleLine = true
             )
+
             Spacer(modifier = Modifier.height(16.dp))
+
             OutlinedTextField(
                 value = newPassword,
                 onValueChange = { newPassword = it },
                 label = { Text("New Password") },
                 visualTransformation = PasswordVisualTransformation(),
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                enabled = !isLoading,
+                singleLine = true
             )
+
             Spacer(modifier = Modifier.height(16.dp))
+
             OutlinedTextField(
                 value = confirmPassword,
                 onValueChange = { confirmPassword = it },
                 label = { Text("Confirm New Password") },
                 visualTransformation = PasswordVisualTransformation(),
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                enabled = !isLoading,
+                singleLine = true
             )
+
             Spacer(modifier = Modifier.height(24.dp))
+
             Button(
                 onClick = {
-                    // Add password change logic here
-                    navController.popBackStack()
+                    Log.d("ChangePassword", "memberId = $memberId")
+                    when {
+                        oldPassword.isEmpty() ->
+                            Toast.makeText(context, "Enter the current Password", Toast.LENGTH_SHORT).show()
+
+                        newPassword.isEmpty() ->
+                            Toast.makeText(context, "Enter the new Password", Toast.LENGTH_SHORT).show()
+
+                        confirmPassword.isEmpty() ->
+                            Toast.makeText(context, "Enter the confirm Password", Toast.LENGTH_SHORT).show()
+
+                        newPassword.length < 6 ->
+                            Toast.makeText(context, "Password must be at least 6 characters", Toast.LENGTH_SHORT).show()
+
+                        newPassword != confirmPassword ->
+                            Toast.makeText(context, "New Password and Confirm Password do not match", Toast.LENGTH_SHORT).show()
+
+                        oldPassword == newPassword ->
+                            Toast.makeText(context, "New Password cannot be the same as the current Password", Toast.LENGTH_SHORT).show()
+
+                        memberId == null ->
+                            Toast.makeText(context, "Cannot fetch member ID", Toast.LENGTH_SHORT).show()
+
+                        else -> {
+                            // ✅ 실제 서버 비밀번호 업데이트 호출
+                            authViewModel.updateMember(
+                                memberId = memberId!!,
+                                password = newPassword,
+                                preference = emptyList(),
+                                tendencies = emptyList(),
+                                clothes = emptyList()
+                            )
+                            navController.popBackStack()
+                        }
+                    }
                 },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(50.dp),
+                enabled = !isLoading &&
+                        oldPassword.isNotEmpty() &&
+                        newPassword.isNotEmpty() &&
+                        confirmPassword.isNotEmpty()
             ) {
-                Text("Change Password")
+                if (isLoading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(24.dp),
+                        color = MaterialTheme.colorScheme.onPrimary
+                    )
+                } else {
+                    Text("Change Password", fontSize = 18.sp)
+                }
             }
         }
     }
 }
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -1439,14 +1527,6 @@ fun ClothesSetting(navController: NavController) {
 
 @Preview(showBackground = true)
 @Composable
-fun LoginScreenPreview() {
-    ClosetCastTheme {
-        LoginScreen(navController = rememberNavController())
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
 fun SignUpScreenPreview() {
     ClosetCastTheme {
         SignUpScreen(navController = rememberNavController())
@@ -1506,14 +1586,6 @@ fun WeatherScreenPreview() {
     )
     ClosetCastTheme {
         WeatherScreen(sampleWeatherData)
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun ChangePasswordScreenPreview() {
-    ClosetCastTheme {
-        ChangePasswordScreen(navController = rememberNavController())
     }
 }
 

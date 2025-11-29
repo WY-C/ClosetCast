@@ -31,6 +31,8 @@ class AuthViewModel : ViewModel() {
     private val _userInfo = mutableStateOf<String?>(null)
     val userInfo: State<String?> = _userInfo
 
+    private val _memberId = mutableStateOf<Long?>(null)
+    val memberId: State<Long?> = _memberId
 
     fun login(loginId: String, password: String) {
         viewModelScope.launch {
@@ -53,23 +55,25 @@ class AuthViewModel : ViewModel() {
                     Log.d("AuthViewModel", "응답 성공 여부: ${response.isSuccess}")
                     Log.d("AuthViewModel", "응답 메시지: ${response.message}")
 
-                    if (response.isSuccess && response.result != null) {
-                        val result = response.result!!
+                    if (response.isSuccess) {
+                        val result = response.result
                         val token = result.token
 
                         Log.d("AuthViewModel", "========== 로그인 성공 ==========")
                         Log.d("AuthViewModel", "사용자: ${result.name}")
                         Log.d("AuthViewModel", "토큰: $token")
+                        Log.d("AuthViewModel", "memberId: ${result.memberId}")
 
                         RetrofitClient.setToken(token)
 
                         withContext(Dispatchers.Main) {
+                            _memberId.value = result.memberId
                             _userInfo.value = result.name
                             _isLoggedIn.value = true
                             _isLoading.value = false
                         }
                     } else {
-                        val errorMessage = response.message ?: "Error Response"
+                        val errorMessage = response.message
                         Log.w("AuthViewModel", "Error Response: $errorMessage")
 
                         withContext(Dispatchers.Main) {
@@ -138,6 +142,7 @@ class AuthViewModel : ViewModel() {
                 // 로그인 상태 초기화
                 _isLoggedIn.value = false
                 _userInfo.value = null
+                _memberId.value = null
                 _isLoading.value = false
                 _error.value = null
             }
@@ -185,7 +190,7 @@ class AuthViewModel : ViewModel() {
                         _isLoading.value = false
                         // 성공 토스트 메시지는 화면에서 처리
                     } else {
-                        _error.value = response.message ?: "Update failed"
+                        _error.value = response.message
                         _isLoading.value = false
                     }
                 }
@@ -215,7 +220,7 @@ class AuthViewModel : ViewModel() {
                         _userInfo.value = "${member.name} (${member.loginId})"
                         _isLoading.value = false
                     } else {
-                        _error.value = response.message ?: "Failed to read member"
+                        _error.value = response.message
                         _isLoading.value = false
                     }
                 }
@@ -247,7 +252,7 @@ class AuthViewModel : ViewModel() {
                         _memberList.value = response.result
                         _isLoading.value = false
                     } else {
-                        _error.value = response.message ?: "Failed to read member list"
+                        _error.value = response.message
                         _isLoading.value = false
                     }
                 }
@@ -276,7 +281,7 @@ class AuthViewModel : ViewModel() {
                         // 탈퇴 성공 시 로그아웃 처리
                         logout()
                     } else {
-                        _error.value = response.message ?: "Failed to delete member"
+                        _error.value = response.message
                         _isLoading.value = false
                     }
                 }

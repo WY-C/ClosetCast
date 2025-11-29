@@ -130,16 +130,12 @@ class WeatherViewModel : ViewModel() {
             ?.maxByOrNull { it.fcstTime.toInt() }
             ?.temperature
 
-        // ✅ 2. Hourly 예보: 오늘 데이터 먼저 가져오기
+        // 2. Hourly
         val todayHourlyList = sortedHourlyList
             .filter { it.fcstTime.toInt() >= currentHour }
+        Log.d("WeatherViewModel", "오늘 남은 Hourly 데이터: ${todayHourlyList.size}")
 
-        Log.d("WeatherViewModel", "오늘 남은 Hourly 데이터: ${todayHourlyList.size}개")
-
-        // ✅ 3. 6개가 안 되면 다음 날 데이터 추가
         val hourlyForecasts = mutableListOf<HourlyForecast>()
-
-        // 오늘 데이터 추가
         todayHourlyList.forEach { hourly ->
             hourlyForecasts.add(
                 HourlyForecast(
@@ -150,23 +146,21 @@ class WeatherViewModel : ViewModel() {
             )
         }
 
-        // 6개가 안 되면 다음 날 데이터 추가
+        // 3. 6개 보장 (오늘 데이터 부족 시 내일 데이터로 채우기)
         if (hourlyForecasts.size < 6) {
             val needed = 6 - hourlyForecasts.size
-            Log.d("WeatherViewModel", "다음 날 데이터 ${needed}개 추가 필요")
+            Log.d("WeatherViewModel", "부족한 Hourly 개수: $needed")
 
-            // ✅ responseList에서 다음 날 데이터 찾기
             val currentDateInt = currentDayResponse.date.toInt()
             val tomorrowResponse = responseList
                 .sortedBy { it.date }
                 .firstOrNull { it.date.toInt() > currentDateInt }
 
             if (tomorrowResponse != null) {
-                Log.d("WeatherViewModel", "다음 날 데이터 발견: ${tomorrowResponse.date}")
-
+                Log.d("WeatherViewModel", "내일 날짜: ${tomorrowResponse.date}")
                 val tomorrowHourlyList = tomorrowResponse.hourlyList
                     .sortedBy { it.fcstTime }
-                    .take(needed) // 필요한 개수만큼만
+                    .take(needed)
 
                 tomorrowHourlyList.forEach { hourly ->
                     hourlyForecasts.add(
@@ -177,19 +171,21 @@ class WeatherViewModel : ViewModel() {
                         )
                     )
                 }
-
-                Log.d("WeatherViewModel", "다음 날 데이터 ${tomorrowHourlyList.size}개 추가됨")
+                Log.d("WeatherViewModel", "내일에서 가져온 Hourly 개수: ${tomorrowHourlyList.size}")
             } else {
-                Log.w("WeatherViewModel", "다음 날 데이터를 찾을 수 없음")
+                Log.w("WeatherViewModel", "내일 데이터가 없어 Hourly 6개를 채우지 못했습니다.")
             }
         }
 
-        Log.d("WeatherViewModel", "최종 Hourly 예보 개수: ${hourlyForecasts.size}")
-        hourlyForecasts.forEach {
-            Log.d("WeatherViewModel", "  ${it.time}: ${it.temperature}°")
+        // ✅ 여기서 최종 6개로 고정
+        val finalHourly = hourlyForecasts.take(6)
+
+        Log.d("WeatherViewModel", "최종 Hourly 예보 개수: ${finalHourly.size}")
+        finalHourly.forEach {
+            Log.d("WeatherViewModel", "D    ${it.time}: ${it.temperature}°")
         }
 
-        // ✅ 4. Daily 예보: 3일치 모두 사용
+        // 4. Daily 3일 예보 생성
         val dailyForecasts = responseList.mapIndexed { index, dayData ->
             DailyForecast(
                 day = formatDateToDay(dayData.date, index),
@@ -211,7 +207,7 @@ class WeatherViewModel : ViewModel() {
                 maxTemp = currentDayResponse.tmx,
                 yesterdaySameTimeTemp = yesterdaySameTimeTemp
             ),
-            hourly = hourlyForecasts,
+            hourly = finalHourly,
             daily = dailyForecasts
         )
     }
