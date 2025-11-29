@@ -119,16 +119,6 @@ class WeatherViewModel : ViewModel() {
         Log.d("WeatherViewModel", "선택된 현재 시각 데이터: ${currentHourlyData?.fcstTime}")
         Log.d("WeatherViewModel", "현재 온도: $currentTemp, 체감온도: $currentApparentTemp")
 
-        // 🔹 1-1. 어제 같은 시각 온도 계산
-        val yesterdayResponse = responseList
-            .filter { it.date < currentDayResponse.date }
-            .maxByOrNull { it.date }
-
-        val yesterdaySameTimeTemp: Double? = yesterdayResponse?.hourlyList
-            ?.sortedBy { it.fcstTime }
-            ?.filter { it.fcstTime.toInt() <= currentHour }
-            ?.maxByOrNull { it.fcstTime.toInt() }
-            ?.temperature
 
         // 2. Hourly
         val todayHourlyList = sortedHourlyList
@@ -204,8 +194,7 @@ class WeatherViewModel : ViewModel() {
                 apparentTemperature = currentApparentTemp,
                 weatherCondition = "날씨 정보",
                 minTemp = currentDayResponse.tmn,
-                maxTemp = currentDayResponse.tmx,
-                yesterdaySameTimeTemp = yesterdaySameTimeTemp
+                maxTemp = currentDayResponse.tmx
             ),
             hourly = finalHourly,
             daily = dailyForecasts

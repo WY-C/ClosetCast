@@ -487,8 +487,7 @@ data class CurrentWeather(
     val apparentTemperature: Double,
     val weatherCondition: String,
     val minTemp: Double,
-    val maxTemp: Double,
-    val yesterdaySameTimeTemp: Double? = null
+    val maxTemp: Double
 )
 
 data class HourlyForecast(
@@ -709,31 +708,16 @@ fun WeatherScreen(weatherData: WeatherData) {
 @Composable
 fun CurrentWeatherCard(currentWeather: CurrentWeather) {
 
-    val diffText = remember(currentWeather.temperature, currentWeather.yesterdaySameTimeTemp) {
-        val yesterday = currentWeather.yesterdaySameTimeTemp
-        if (yesterday == null) {
-            "No data for yesterday"
-        } else {
-            val diff = currentWeather.temperature - yesterday
-            val rounded = kotlin.math.round(diff * 10) / 10.0
-            when {
-                rounded > 0 -> "${rounded}° higher than yesterday"
-                rounded < 0 -> "${-rounded}° lower than yesterday"
-                else -> "Same as yesterday"
-            }
-        }
-    }
-
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
         modifier = Modifier.fillMaxWidth()
     ) {
+        Text(text = "The temperature is now... ", fontSize = 20.sp, fontWeight = FontWeight.Bold)
+        Spacer(modifier = Modifier.height(8.dp))
         Text(text = currentWeather.location, fontSize = 20.sp, fontWeight = FontWeight.Bold)
         Spacer(modifier = Modifier.height(8.dp))
         Text(text = "${currentWeather.temperature}°", fontSize = 64.sp, fontWeight = FontWeight.Bold)
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(text = diffText, fontSize = 16.sp)   // 🔹 여기만 변경
         Spacer(modifier = Modifier.height(8.dp))
         Text(text = "Min: ${currentWeather.minTemp}° Max: ${currentWeather.maxTemp}°", fontSize = 16.sp)
         Spacer(modifier = Modifier.height(12.dp))
