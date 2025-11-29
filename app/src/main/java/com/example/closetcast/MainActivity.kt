@@ -205,7 +205,10 @@ fun AppNavigation(authViewModel: AuthViewModel) {
             )
         }
         composable("clothessetting") {
-            ClothesSetting(navController = navController)
+            ClothesSetting(
+                navController = navController,
+                authViewModel = authViewModel
+            )
         }
         composable("changepassword") {
             ChangePasswordScreen(
@@ -214,7 +217,10 @@ fun AppNavigation(authViewModel: AuthViewModel) {
             )
         }
         composable("withdraw") {
-            WithdrawScreen(navController = navController)
+            WithdrawScreen(
+                navController = navController,
+                authViewModel = authViewModel
+                )
         }
     }
 }
@@ -1140,7 +1146,7 @@ fun ChangePasswordScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun WithdrawScreen(navController: NavController) {
+fun WithdrawScreen(navController: NavController, authViewModel: AuthViewModel) {
     val context = LocalContext.current
     Scaffold(
         topBar = {
@@ -1439,8 +1445,49 @@ fun ClothingItem(name: String, isSelected: Boolean, onToggle: (Boolean) -> Unit)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ClothesSetting(navController: NavController) {
+fun ClothesSetting(
+    navController: NavController,
+    authViewModel: AuthViewModel = viewModel()
+) {
     val context = LocalContext.current
+    val isLoading by authViewModel.isLoading
+    val error by authViewModel.error
+    val memberId by authViewModel.memberId
+
+    val (outerwear, setOuterwear) = remember {
+        mutableStateOf<Map<String, Boolean>>(
+            mapOf(
+                "Puffer Jacket" to false,
+                "coat" to false,
+                "Fleece" to false,
+                "jacket" to false,
+                "windbreaker" to false
+            )
+        )
+    }
+
+    val (tops, setTops) = remember {
+        mutableStateOf<Map<String, Boolean>>(
+            mapOf(
+                "sweater" to false,
+                "hoodie" to false,
+                "shirt" to false,
+                "long sleeve" to false,
+                "short sleeve" to false
+            )
+        )
+    }
+
+    val (bottoms, setBottoms) = remember {
+        mutableStateOf<Map<String, Boolean>>(
+            mapOf(
+                "jeans" to false,
+                "cotton pants" to false,
+                "shorts" to false
+            )
+        )
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -1455,55 +1502,113 @@ fun ClothesSetting(navController: NavController) {
         bottomBar = {
             Button(
                 onClick = {
+                    if (memberId == null) {
+                        Toast.makeText(context, "로그인 정보를 불러올 수 없습니다.", Toast.LENGTH_SHORT).show()
+                        return@Button
+                    }
+
+                    // ✅ 현재 선택된 옷 이름들을 모두 수집
+                    val selectedClothes = mutableListOf<String>()
+
+                    outerwear.forEach { (name, hasItem) ->
+                        if (hasItem) selectedClothes.add(name)
+                    }
+                    tops.forEach { (name, hasItem) ->
+                        if (hasItem) selectedClothes.add(name)
+                    }
+                    bottoms.forEach { (name, hasItem) ->
+                        if (hasItem) selectedClothes.add(name)
+                    }
+
+                    // 비어 있어도 서버에 빈 리스트로 보내도록 할지, 막을지는 선택
+                    authViewModel.updateMember(
+                        memberId = memberId!!,
+                        password = "",                 // 비밀번호 변경 없음
+                        preference = emptyList(),      // 스타일은 여기서 안 건드림
+                        tendencies = emptyList(),      // 민감도도 안 건드림
+                        clothes = selectedClothes      // ✅ 옷 정보만 업데이트
+                    )
+
                     Toast.makeText(context, "Edit completed.", Toast.LENGTH_SHORT).show()
                     navController.popBackStack()
                 },
-                modifier = Modifier.fillMaxWidth().padding(16.dp)
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                enabled = !isLoading
             ) {
-                Text("Edit Complete")
+                if (isLoading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(24.dp),
+                        color = MaterialTheme.colorScheme.onPrimary
+                    )
+                } else {
+                    Text("Edit Complete")
+                }
             }
         }
+
     ) { innerPadding ->
+        // ✅ content 쪽에서도 같은 상태 사용
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
                 .padding(16.dp)
-                .verticalScroll(rememberScrollState()),
+                .verticalScroll(rememberScrollState())
         ) {
-            Text("What clothes do you have?", fontSize = 24.sp, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
-            Spacer(modifier = Modifier.height(24.dp))
+            if (error != null) {
+                Text(
+                    text = error!!,
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 16.dp),
+                    textAlign = TextAlign.Center
+                )
+            }
 
             // Outer Wear Section
             Text("Outer Wear", style = MaterialTheme.typography.headlineSmall)
             Spacer(modifier = Modifier.height(8.dp))
-            val (outerwear, setOuterwear) = remember { mutableStateOf(mapOf("Puffer Jacket" to false, "coat" to false, "Fleece" to false, "jacket" to false, "windbreaker" to false)) }
             outerwear.keys.forEach { item ->
-                ClothingItem(name = item, isSelected = outerwear[item] ?: false, onToggle = {
-                    setOuterwear(outerwear + (item to it))
-                })
+                ClothingItem(
+                    name = item,
+                    isSelected = outerwear[item] ?: false,
+                    onToggle = { checked ->
+                        setOuterwear(outerwear + (item to checked))
+                    }
+                )
             }
+
             Spacer(modifier = Modifier.height(16.dp))
 
             // Top Wear Section
             Text("Top Wear", style = MaterialTheme.typography.headlineSmall)
             Spacer(modifier = Modifier.height(8.dp))
-            val (tops, setTops) = remember { mutableStateOf(mapOf("sweater" to false, "hoodie" to false, "shirt" to false, "long sleeve" to false, "short sleeve" to false)) }
             tops.keys.forEach { item ->
-                ClothingItem(name = item, isSelected = tops[item] ?: false, onToggle = {
-                    setTops(tops + (item to it))
-                })
+                ClothingItem(
+                    name = item,
+                    isSelected = tops[item] ?: false,
+                    onToggle = { checked ->
+                        setTops(tops + (item to checked))
+                    }
+                )
             }
+
             Spacer(modifier = Modifier.height(16.dp))
 
             // Bottom Wear Section
             Text("Bottom Wear", style = MaterialTheme.typography.headlineSmall)
             Spacer(modifier = Modifier.height(8.dp))
-            val (bottoms, setBottoms) = remember { mutableStateOf(mapOf("jeans" to false, "cotton pants" to false, "shorts" to false)) }
             bottoms.keys.forEach { item ->
-                ClothingItem(name = item, isSelected = bottoms[item] ?: false, onToggle = {
-                    setBottoms(bottoms + (item to it))
-                })
+                ClothingItem(
+                    name = item,
+                    isSelected = bottoms[item] ?: false,
+                    onToggle = { checked ->
+                        setBottoms(bottoms + (item to checked))
+                    }
+                )
             }
         }
     }
@@ -1586,10 +1691,3 @@ fun ClothingRecommendationScreenPreview() {
     }
 }
 
-@Preview(showBackground = true)
-@Composable
-fun WithdrawScreenPreview() {
-    ClosetCastTheme {
-        WithdrawScreen(navController = rememberNavController())
-    }
-}
