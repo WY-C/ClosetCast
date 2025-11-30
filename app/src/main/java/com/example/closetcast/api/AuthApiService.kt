@@ -189,6 +189,12 @@ data class ApiResponseListMemberDto(
     val result: List<MemberDto>
 )
 
+data class MemberProfile(
+    val preference: List<String> = emptyList(),
+    val tendencies: List<String> = emptyList(),
+    val clothes: List<String> = emptyList()
+)
+
 interface AuthApiService {
     @POST("/api/member/signin")
     suspend fun signIn(@Body request: SignInRequestDto): ApiResponseSignInResponseDto
@@ -210,4 +216,5 @@ interface AuthApiService {
     @DELETE("/api/member/delete/{memberId}")
     suspend fun deleteMember(@Path("memberId") memberId: Long): ApiResponseMemberDto
 }
+
 

@@ -1453,6 +1453,7 @@ fun ClothesSetting(
     val isLoading by authViewModel.isLoading
     val error by authViewModel.error
     val memberId by authViewModel.memberId
+    val memberProfile by authViewModel.memberProfile
 
     val (outerwear, setOuterwear) = remember {
         mutableStateOf<Map<String, Boolean>>(
@@ -1508,24 +1509,32 @@ fun ClothesSetting(
                     }
 
                     // ✅ 현재 선택된 옷 이름들을 모두 수집
-                    val selectedClothes = mutableListOf<String>()
+                    val rawClothes = mutableListOf<String>()
 
                     outerwear.forEach { (name, hasItem) ->
-                        if (hasItem) selectedClothes.add(name)
+                        if (hasItem) rawClothes.add(name)
                     }
                     tops.forEach { (name, hasItem) ->
-                        if (hasItem) selectedClothes.add(name)
+                        if (hasItem) rawClothes.add(name)
                     }
                     bottoms.forEach { (name, hasItem) ->
-                        if (hasItem) selectedClothes.add(name)
+                        if (hasItem) rawClothes.add(name)
                     }
+
+                    // 2) 서버 요구 포맷으로 변환: 대문자 + 공백→언더스코어
+                    val selectedClothes = rawClothes.map { name ->
+                        name.trim()              // 앞뒤 공백 제거
+                            .replace(' ', '_')   // 공백을 언더스코어로
+                            .uppercase()         // 전부 대문자
+                    }
+
 
                     // 비어 있어도 서버에 빈 리스트로 보내도록 할지, 막을지는 선택
                     authViewModel.updateMember(
                         memberId = memberId!!,
                         password = "",                 // 비밀번호 변경 없음
-                        preference = emptyList(),      // 스타일은 여기서 안 건드림
-                        tendencies = emptyList(),      // 민감도도 안 건드림
+                        preference = memberProfile.preference,      // 스타일은 여기서 안 건드림
+                        tendencies = memberProfile.tendencies,      // 민감도도 안 건드림
                         clothes = selectedClothes      // ✅ 옷 정보만 업데이트
                     )
 

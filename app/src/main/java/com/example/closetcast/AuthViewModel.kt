@@ -34,6 +34,9 @@ class AuthViewModel : ViewModel() {
     private val _memberId = mutableStateOf<Long?>(null)
     val memberId: State<Long?> = _memberId
 
+    private val _memberProfile = mutableStateOf(MemberProfile())
+    val memberProfile: State<MemberProfile> = _memberProfile
+
     fun login(loginId: String, password: String) {
         viewModelScope.launch {
             _isLoading.value = true
@@ -66,12 +69,17 @@ class AuthViewModel : ViewModel() {
 
                         RetrofitClient.setToken(token)
 
+                        // ✅ 1) 메인 스레드에서 로그인 상태/ID 저장
                         withContext(Dispatchers.Main) {
                             _memberId.value = result.memberId
                             _userInfo.value = result.name
                             _isLoggedIn.value = true
                             _isLoading.value = false
                         }
+
+                        // ✅ 2) 로그인 직후 바로 서버에서 상세 정보 읽어오기
+                        //     (preference, tendencies, clothes 등)
+                        readMember(result.memberId)
                     } else {
                         val errorMessage = response.message
                         Log.w("AuthViewModel", "Error Response: $errorMessage")
@@ -208,7 +216,6 @@ class AuthViewModel : ViewModel() {
         viewModelScope.launch {
             _isLoading.value = true
             _error.value = null
-
             try {
                 val response = withContext(Dispatchers.IO) {
                     RetrofitClient.authApiService.readMember(memberId)
@@ -216,8 +223,12 @@ class AuthViewModel : ViewModel() {
 
                 withContext(Dispatchers.Main) {
                     if (response.isSuccess) {
-                        val member = response.result
-                        _userInfo.value = "${member.name} (${member.loginId})"
+                        val r = response.result
+                        _memberProfile.value = MemberProfile(
+                            preference = r.preference,
+                            tendencies = r.tendencies,
+                            clothes = r.clothes
+                        )
                         _isLoading.value = false
                     } else {
                         _error.value = response.message
@@ -226,12 +237,13 @@ class AuthViewModel : ViewModel() {
                 }
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
-                    _error.value = "Error reading member: ${e.localizedMessage}"
+                    _error.value = e.message
                     _isLoading.value = false
                 }
             }
         }
     }
+
 
     // ===== 3. 모든 사용자 조회 (관리자용) =====
     private val _memberList = mutableStateOf<List<MemberDto>>(emptyList())
