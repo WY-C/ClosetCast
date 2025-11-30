@@ -119,8 +119,9 @@ public class MemberService {
                 () -> new MemberHandler(ErrorStatus.MEMBER_NOT_FOUND)
         );
 
+        MemberDto dto = MemberDto.of(member.getId(), member.getName(), member.getLoginId(), member.getPreferences(), member.getTendencies(), member.getClothes());
         memberRepository.deleteById(memberId);
 
-        return MemberDto.of(member.getId(), member.getName(), member.getLoginId(), member.getPreferences(), member.getTendencies(), member.getClothes());
+        return dto;
     }
 }
