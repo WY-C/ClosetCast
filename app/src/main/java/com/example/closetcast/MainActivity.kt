@@ -164,7 +164,7 @@ fun AppNavigation(authViewModel: AuthViewModel) {
             SignUpScreen(navController = navController)
         }
         composable("main") {
-            MainScreen(navController = navController)
+            MainScreen(navController = navController, authViewModel = authViewModel)
         }
         composable(
             route = "styleandsensitivity?isSignUpProcess={isSignUpProcess}&name={name}&loginId={loginId}&password={password}",
@@ -520,13 +520,11 @@ data class ClothingRecommendation(val outer: String, val top: String, val bottom
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(navController: NavController, authViewModel: AuthViewModel = viewModel()) {
-
+    Log.d("MainScreen", "authViewModel memberId: ${authViewModel.memberId.value}")  // ← 추가
     val bottomBarNavController = rememberNavController()
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
-
-    val authViewModel: AuthViewModel = viewModel()
 
     val items = listOf(
         BottomNavItem.Weather,
@@ -682,7 +680,11 @@ fun MainScreen(navController: NavController, authViewModel: AuthViewModel = view
                 }
                 composable(BottomNavItem.Clothing.route) {
                     if (weatherData != null) {
-                        ClothingRecommendationScreen(weatherData!!)
+                        ClothingRecommendationScreen(
+                            weatherData = weatherData!!,
+                            authViewModel = authViewModel,  // authViewModel 전달
+                            weatherViewModel = weatherViewModel  // weatherViewModel 전달
+                        )
                     } else {
                         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                             Text("날씨 정보를 불러오는 중...")
@@ -841,7 +843,11 @@ fun ApparentTemperatureCard(apparentTemperature: Double) {
 }
 
 @Composable
-fun ClothingRecommendationCard(recommendation: ClothingRecommendation) {
+fun ClothingRecommendationCard(
+    recommendation: ClothingRecommendation,
+    isLoading: Boolean = false,
+    onRefreshClick: () -> Unit
+) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -915,8 +921,18 @@ fun ClothingRecommendationCard(recommendation: ClothingRecommendation) {
             }
         }
         Spacer(modifier = Modifier.height(24.dp))
-        OutlinedButton(onClick = { /* TODO */ }) {
-            Text("View Other Recommendations")
+        OutlinedButton(
+            onClick = {
+                Log.d("ClothingCard", "버튼 클릭됨!")
+                onRefreshClick()
+            },
+            enabled = !isLoading
+        ) {
+            if (isLoading) {
+                CircularProgressIndicator(modifier = Modifier.size(16.dp))
+            } else {
+                Text("Other Recommendations")
+            }
         }
     }
 }
@@ -938,6 +954,7 @@ fun getImageResourceForClothingName(name: String): Int {
 }
 
 fun getRecommendationForTemperature(temp: Double): ClothingRecommendation {
+    // 기온에 따라 옷 종류 중 하나를 추천해 주는 하드 코딩 방식, 사용자가 어떤 옷을 입고있는지 상관 X
     val topList: List<String>
     val outerList: List<String>
     val bottomList: List<String>
@@ -945,7 +962,7 @@ fun getRecommendationForTemperature(temp: Double): ClothingRecommendation {
     when {
         temp >= 28.0 -> {
             outerList = listOf("None")
-            topList = listOf("Short sleeve", "Sleeveless")
+            topList = listOf("Short sleeve")
             bottomList = listOf("Shorts")
         }
         temp in 23.0..27.0 -> {
@@ -954,7 +971,7 @@ fun getRecommendationForTemperature(temp: Double): ClothingRecommendation {
             bottomList = listOf("Shorts", "Cotton pants")
         }
         temp in 20.0..22.0 -> {
-            outerList = listOf("Spring/Fall Jacket", "Blazer", "Cardigan", "Denim")
+            outerList = listOf("Spring/Fall Jacket")
             topList = listOf("Shirt", "Long sleeve", "Sweater")
             bottomList = listOf("Jeans", "Cotton pants")
         }
@@ -993,9 +1010,35 @@ fun getRecommendationForTemperature(temp: Double): ClothingRecommendation {
 }
 
 @Composable
-fun ClothingRecommendationScreen(weatherData: WeatherData) {
-    val recommendation = getRecommendationForTemperature(weatherData.current.temperature)
-    ClothingRecommendationCard(recommendation)
+fun ClothingRecommendationScreen(
+    weatherData: WeatherData,
+    authViewModel: AuthViewModel,
+    weatherViewModel: WeatherViewModel
+) {
+    val context = LocalContext.current
+    var isLoading by remember { mutableStateOf(false) }
+    var recommendation by remember {
+        mutableStateOf(getRecommendationForTemperature(weatherData.current.temperature))
+    }
+    val memberId by authViewModel.memberId
+
+    ClothingRecommendationCard(
+        recommendation = recommendation,
+        isLoading = isLoading,
+        onRefreshClick = {
+            Log.d("ClothingRecommendationScreen", "memberId: $memberId")
+            if (memberId != null) {
+                isLoading = true
+                weatherViewModel.getRecommend(memberId!!) { newRecommendation ->
+                    recommendation = newRecommendation
+                    isLoading = false
+                    Toast.makeText(context, "추천 업데이트 완료", Toast.LENGTH_SHORT).show()
+                }
+            } else {
+                Log.d("ClothingRecommendationScreen", "memberId가 null입니다!")
+            }
+        }
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -1316,6 +1359,9 @@ fun StyleAndSensitivityScreen(
                             tendencies = tendencies,
                             clothes = memberProfile.clothes
                         )
+                        navController.navigate("main"){
+                            popUpTo("main"){inclusive = true}
+                        }
                     }
                 },
                 modifier = Modifier.fillMaxWidth().padding(16.dp),
@@ -1643,19 +1689,6 @@ fun WeatherScreenPreview() {
     )
     ClosetCastTheme {
         WeatherScreen(sampleWeatherData)
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun ClothingRecommendationScreenPreview() {
-    val sampleWeatherData = WeatherData(
-        current = CurrentWeather("Dongjak-gu, Sangdo 1-dong", 12.0, 10.0,"Clear", 11.0, 17.0),
-        hourly = listOf(),
-        daily = listOf()
-    )
-    ClosetCastTheme {
-        ClothingRecommendationScreen(sampleWeatherData)
     }
 }
 

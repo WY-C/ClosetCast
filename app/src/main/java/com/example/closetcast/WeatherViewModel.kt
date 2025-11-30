@@ -31,6 +31,9 @@ class WeatherViewModel : ViewModel() {
     private val _currentLocation = mutableStateOf<Pair<Double, Double>?>(null)
     val currentLocation: State<Pair<Double, Double>?> = _currentLocation
 
+    private val _recommendation = mutableStateOf(ClothingRecommendation("None", "None", "None"))
+    val recommendation: State<ClothingRecommendation> = _recommendation
+
     fun fetchWeather(latitude: Double, longitude: Double) {
         _currentLocation.value = Pair(latitude, longitude)
         viewModelScope.launch {
@@ -273,4 +276,30 @@ class WeatherViewModel : ViewModel() {
             else -> Icons.Default.WbSunny
         }
     }
+
+    fun getRecommend(memberId: Long, onSuccess: (ClothingRecommendation) -> Unit) {
+        viewModelScope.launch {
+            try {
+                val response = withContext(Dispatchers.IO) {
+                    RetrofitClient.apiService.getRecommend(memberId)
+                }
+                if (response.isSuccess) {
+                    val result = ClothingRecommendation(
+                        outer = response.result.outer,
+                        top = response.result.top,
+                        bottom = response.result.bottom
+                    )
+                    _recommendation.value = result
+                    withContext(Dispatchers.Main) {
+                        onSuccess(result)
+                    }
+                } else {
+                    Log.e("WeatherViewModel", "API Error: ${response.message}")
+                }
+            } catch (e: Exception) {
+                Log.e("WeatherViewModel", "Exception in getRecommend: ${e.message}", e)
+            }
+        }
+    }
+
 }

@@ -67,6 +67,7 @@ class AuthViewModel : ViewModel() {
                         Log.d("AuthViewModel", "토큰: $token")
                         Log.d("AuthViewModel", "memberId: ${result.memberId}")
 
+
                         RetrofitClient.setToken(token)
 
                         // ✅ 1) 메인 스레드에서 로그인 상태/ID 저장
