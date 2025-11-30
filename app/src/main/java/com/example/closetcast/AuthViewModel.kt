@@ -171,7 +171,7 @@ class AuthViewModel : ViewModel() {
     // ===== 1. 유저 정보 업데이트 (필수) =====
     fun updateMember(
         memberId: Long,
-        password: String,
+        password: String?,
         preference: List<String>,
         tendencies: List<String>,
         clothes: List<String>

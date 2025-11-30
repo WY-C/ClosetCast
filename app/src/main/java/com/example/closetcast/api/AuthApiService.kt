@@ -97,7 +97,7 @@ data class ApiResponseSignUpResponseDto(
 // ===== 유저 정보 업데이트 =====
 data class MemberUpdateRequestDto(
     @SerializedName("password")
-    val password: String,
+    val password: String?,
 
     @SerializedName("preference")
     val preference: List<String>,

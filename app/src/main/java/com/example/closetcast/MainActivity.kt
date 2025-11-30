@@ -1012,7 +1012,7 @@ fun ChangePasswordScreen(
     val isLoading by authViewModel.isLoading
     val error by authViewModel.error
     val memberId by authViewModel.memberId
-
+    val memberProfile by authViewModel.memberProfile
     Scaffold(
         topBar = {
             TopAppBar(
@@ -1114,9 +1114,9 @@ fun ChangePasswordScreen(
                             authViewModel.updateMember(
                                 memberId = memberId!!,
                                 password = newPassword,
-                                preference = emptyList(),
-                                tendencies = emptyList(),
-                                clothes = emptyList()
+                                preference = memberProfile.preference,
+                                tendencies = memberProfile.tendencies,
+                                clothes = memberProfile.clothes
                             )
                             navController.popBackStack()
                         }
@@ -1172,16 +1172,18 @@ fun WithdrawScreen(navController: NavController, authViewModel: AuthViewModel) {
             Spacer(modifier = Modifier.height(24.dp))
             Button(
                 onClick = {
-                    Toast.makeText(context, "Account withdrawal completed.", Toast.LENGTH_SHORT).show()
-                    navController.navigate("login") {
-                        popUpTo(navController.graph.findStartDestination().id) {
-                            inclusive = true
+                    val memberId = authViewModel.memberId.value
+                    if (memberId == null) {
+                        Toast.makeText(context, "User ID not found", Toast.LENGTH_SHORT).show()
+                    } else {
+                        authViewModel.deleteMember(memberId)
+                        navController.navigate("login") {
+                            popUpTo(0)  // 모든 이전 스택 제거
                         }
                     }
-                },
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                }
             ) {
-                Text("Account Withdrawal")
+                Text("Yes. Delete this Account")
             }
         }
     }
@@ -1242,11 +1244,11 @@ fun getStyleImageResource(style: String): Int {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun StyleAndSensitivityScreen(
     navController: NavController,
-    authViewModel: AuthViewModel = viewModel(),
+    authViewModel: AuthViewModel,
     isSignUpProcess: Boolean = false,
     signUpName: String? = null,
     signUpLoginId: String? = null,
@@ -1254,30 +1256,14 @@ fun StyleAndSensitivityScreen(
 ) {
     var heatSensitive by rememberSaveable { mutableStateOf(false) }
     var coldSensitive by rememberSaveable { mutableStateOf(false) }
-
     val styles = listOf("Minimal", "Casual", "Street", "Classic", "Dandy", "Retro")
     val selectedStyles = rememberSaveable { mutableStateListOf<String>() }
-
     val context = LocalContext.current
-
     val isLoading by authViewModel.isLoading
     val error by authViewModel.error
-
-    // ✅ 회원가입 완료 추적 (버튼 클릭 여부)
-    var signUpRequested by rememberSaveable { mutableStateOf(false) }
-
-    // ✅ 회원가입 성공 시 로그인 화면으로 이동
-    // isLoading이 false가 되고, error가 null이고, signUpRequested가 true면 성공!
-    LaunchedEffect(isLoading, error) {
-        if (signUpRequested && !isLoading && error == null && isSignUpProcess) {
-            Toast.makeText(context, "회원가입 성공! 로그인해주세요.", Toast.LENGTH_SHORT).show()
-            navController.navigate("login") {
-                popUpTo(navController.graph.findStartDestination().id) {
-                    inclusive = true
-                }
-            }
-        }
-    }
+    val memberId by authViewModel.memberId
+    val memberProfile by authViewModel.memberProfile
+    var editRequested by rememberSaveable { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -1286,7 +1272,7 @@ fun StyleAndSensitivityScreen(
                     title = { Text("Edit Personal Information") },
                     navigationIcon = {
                         IconButton(onClick = { navController.popBackStack() }) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Previous")
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                         }
                     }
                 )
@@ -1295,46 +1281,54 @@ fun StyleAndSensitivityScreen(
         bottomBar = {
             Button(
                 onClick = {
-                    if (isSignUpProcess && signUpName != null && signUpLoginId != null && signUpPassword != null) {
-                        val preference = selectedStyles.map { it.uppercase() }.ifEmpty { listOf("MINIMAL") }
-                        val tendencies = buildList {
-                            if (heatSensitive) add("HOT")
-                            if (coldSensitive) add("COLD")
-                            if (isEmpty()) add("NORMAL")
+                    val preference = selectedStyles.map { it.uppercase() }.ifEmpty { listOf("CASUAL") }
+                    val tendencies = buildList {
+                        if (heatSensitive) add("HOT")
+                        if (coldSensitive) add("COLD")
+                    }
+
+                    if (isSignUpProcess) {
+                        if (signUpName != null && signUpLoginId != null && signUpPassword != null) {
+                            editRequested = true
+                            authViewModel.signUp(
+                                name = signUpName,
+                                loginId = signUpLoginId,
+                                password = signUpPassword,
+                                preference = preference,
+                                tendencies = tendencies
+                            )
+                        } else {
+                            Toast.makeText(context, "Required sign up information missing.", Toast.LENGTH_SHORT).show()
+                        }
+                    } else {
+                        // 수정 모드: updateMember 호출하여 서버에 반영
+                        if (memberId == null) {
+                            Toast.makeText(context, "Cannot fetch member info", Toast.LENGTH_SHORT).show()
+                            return@Button
                         }
 
-                        // ✅ 회원가입 요청 플래그 설정
-                        signUpRequested = true
-
-                        authViewModel.signUp(
-                            name = signUpName,
-                            loginId = signUpLoginId,
-                            password = signUpPassword,
+                        editRequested = true
+                        authViewModel.updateMember(
+                            memberId = memberId!!,
+                            // 비밀번호는 그대로 유지. 변경 시 별도 처리 필요
+                            password = null,
                             preference = preference,
-                            tendencies = tendencies
+                            tendencies = tendencies,
+                            clothes = memberProfile.clothes
                         )
-                    } else {
-                        Toast.makeText(context, "Edit completed.", Toast.LENGTH_SHORT).show()
-                        navController.popBackStack()
                     }
                 },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
+                modifier = Modifier.fillMaxWidth().padding(16.dp),
                 enabled = !isLoading
             ) {
                 if (isLoading) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(24.dp),
-                        color = MaterialTheme.colorScheme.onPrimary
-                    )
+                    CircularProgressIndicator(modifier = Modifier.size(24.dp), color = MaterialTheme.colorScheme.onPrimary)
                 } else {
                     Text(if (isSignUpProcess) "Done" else "Edit Complete")
                 }
             }
         }
     ) { innerPadding ->
-        // ... 나머지 UI는 그대로 ...
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -1343,22 +1337,15 @@ fun StyleAndSensitivityScreen(
                 .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Spacer(modifier = Modifier.height(16.dp))
-
             if (error != null) {
                 Text(
                     text = error!!,
                     color = MaterialTheme.colorScheme.error,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 16.dp),
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
                     textAlign = TextAlign.Center
                 )
             }
-
-            Text("Choose your style preference", style = MaterialTheme.typography.headlineSmall)
-            Spacer(modifier = Modifier.height(16.dp))
-
+            Text("Choose your style preference", style = MaterialTheme.typography.headlineSmall, modifier = Modifier.padding(vertical = 16.dp))
             FlowRow(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceEvenly,
@@ -1366,62 +1353,34 @@ fun StyleAndSensitivityScreen(
                 maxItemsInEachRow = 2
             ) {
                 styles.forEach { style ->
-                    StyleSelectionItem(
-                        style = style,
-                        isSelected = selectedStyles.contains(style),
-                        onSelect = {
-                            if (selectedStyles.contains(style)) {
-                                selectedStyles.remove(style)
-                            } else {
-                                selectedStyles.add(style)
-                            }
-                        }
-                    )
+                    StyleSelectionItem(style, selectedStyles.contains(style)) {
+                        if (selectedStyles.contains(style)) selectedStyles.remove(style) else selectedStyles.add(style)
+                    }
                 }
             }
-
-            Spacer(modifier = Modifier.height(24.dp))
-            HorizontalDivider()
-            Spacer(modifier = Modifier.height(24.dp))
-
-            Text(
-                "Your sensitivity tendency",
-                style = MaterialTheme.typography.headlineSmall,
-                textAlign = TextAlign.Center
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Column(modifier = Modifier.padding(horizontal = 8.dp).widthIn(max = 400.dp)) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text(text = "Sensitive to Heat", fontSize = 18.sp)
-                    Switch(
-                        checked = heatSensitive,
-                        onCheckedChange = { heatSensitive = it }
-                    )
-                }
-
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text(text = "Sensitive to Cold", fontSize = 18.sp)
-                    Switch(
-                        checked = coldSensitive,
-                        onCheckedChange = { coldSensitive = it }
-                    )
-                }
+            Spacer(Modifier.height(24.dp))
+            Text("Your sensitivity tendency", style = MaterialTheme.typography.headlineSmall, textAlign = TextAlign.Center)
+            Spacer(Modifier.height(16.dp))
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text("Sensitive to Heat", fontSize = 18.sp)
+                Switch(checked = heatSensitive, onCheckedChange = { heatSensitive = it })
             }
-
-            Spacer(modifier = Modifier.height(16.dp))
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text("Sensitive to Cold", fontSize = 18.sp)
+                Switch(checked = coldSensitive, onCheckedChange = { coldSensitive = it })
+            }
         }
     }
 }
@@ -1456,7 +1415,7 @@ fun ClothesSetting(
     val memberProfile by authViewModel.memberProfile
 
     val (outerwear, setOuterwear) = remember {
-        mutableStateOf<Map<String, Boolean>>(
+        mutableStateOf(
             mapOf(
                 "Puffer Jacket" to false,
                 "coat" to false,
@@ -1468,7 +1427,7 @@ fun ClothesSetting(
     }
 
     val (tops, setTops) = remember {
-        mutableStateOf<Map<String, Boolean>>(
+        mutableStateOf(
             mapOf(
                 "sweater" to false,
                 "hoodie" to false,
@@ -1480,7 +1439,7 @@ fun ClothesSetting(
     }
 
     val (bottoms, setBottoms) = remember {
-        mutableStateOf<Map<String, Boolean>>(
+        mutableStateOf(
             mapOf(
                 "jeans" to false,
                 "cotton pants" to false,
@@ -1532,7 +1491,7 @@ fun ClothesSetting(
                     // 비어 있어도 서버에 빈 리스트로 보내도록 할지, 막을지는 선택
                     authViewModel.updateMember(
                         memberId = memberId!!,
-                        password = "",                 // 비밀번호 변경 없음
+                        password = null,                 // 비밀번호 변경 없음
                         preference = memberProfile.preference,      // 스타일은 여기서 안 건드림
                         tendencies = memberProfile.tendencies,      // 민감도도 안 건드림
                         clothes = selectedClothes      // ✅ 옷 정보만 업데이트
