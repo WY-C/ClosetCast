@@ -349,7 +349,6 @@ fun SignUpScreen(navController: NavController, authViewModel: AuthViewModel = vi
     val context = LocalContext.current
     val isLoading by authViewModel.isLoading
     val error by authViewModel.error
-    val isLoggedIn by authViewModel.isLoggedIn
 
 
     Scaffold { innerPadding ->
@@ -1297,17 +1296,52 @@ fun StyleAndSensitivityScreen(
     signUpLoginId: String? = null,
     signUpPassword: String? = null
 ) {
-    var heatSensitive by rememberSaveable { mutableStateOf(false) }
-    var coldSensitive by rememberSaveable { mutableStateOf(false) }
     val styles = listOf("Minimal", "Casual", "Street", "Classic", "Dandy", "Retro")
-    val selectedStyles = rememberSaveable { mutableStateListOf<String>() }
+
     val context = LocalContext.current
     val isLoading by authViewModel.isLoading
     val error by authViewModel.error
     val memberId by authViewModel.memberId
     val memberProfile by authViewModel.memberProfile
-    var editRequested by rememberSaveable { mutableStateOf(false) }
 
+    // ✅ 서버에 저장된 값 (수정 모드에서만 사용)
+    val savedPreference = memberProfile.preference
+    val savedTendencies = memberProfile.tendencies
+
+    val selectedStyles = rememberSaveable(isSignUpProcess, memberProfile) {
+        if (isSignUpProcess) {
+            mutableStateListOf()
+        } else {
+            mutableStateListOf<String>().apply {
+                // 서버에서 온 값은 이미 대문자라고 가정 → 첫 글자만 대문자로 다시 맞춰줌
+                addAll(
+                    savedPreference.map { pref ->
+                        pref.lowercase().replaceFirstChar { it.titlecase() }
+                    }.filter { it in styles }
+                )
+            }
+        }
+    }
+
+    var heatSensitive by rememberSaveable(isSignUpProcess, memberProfile) {
+        mutableStateOf(
+            if (isSignUpProcess) {
+                false
+            } else {
+                "HOT" in savedTendencies
+            }
+        )
+    }
+
+    var coldSensitive by rememberSaveable(isSignUpProcess, memberProfile) {
+        mutableStateOf(
+            if (isSignUpProcess) {
+                false
+            } else {
+                "COLD" in savedTendencies
+            }
+        )
+    }
     Scaffold(
         topBar = {
             if (!isSignUpProcess) {
@@ -1332,7 +1366,6 @@ fun StyleAndSensitivityScreen(
 
                     if (isSignUpProcess) {
                         if (signUpName != null && signUpLoginId != null && signUpPassword != null) {
-                            editRequested = true
                             authViewModel.signUp(
                                 name = signUpName,
                                 loginId = signUpLoginId,
@@ -1344,23 +1377,26 @@ fun StyleAndSensitivityScreen(
                             Toast.makeText(context, "Required sign up information missing.", Toast.LENGTH_SHORT).show()
                         }
                     } else {
-                        // 수정 모드: updateMember 호출하여 서버에 반영
+                        // ✅ 메인에서 들어온 경우: 기존 값 기반으로 수정
                         if (memberId == null) {
-                            Toast.makeText(context, "Cannot fetch member info", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(
+                                context,
+                                "Cannot fetch member info",
+                                Toast.LENGTH_SHORT
+                            ).show()
                             return@Button
                         }
 
-                        editRequested = true
                         authViewModel.updateMember(
                             memberId = memberId!!,
-                            // 비밀번호는 그대로 유지. 변경 시 별도 처리 필요
                             password = null,
                             preference = preference,
                             tendencies = tendencies,
                             clothes = memberProfile.clothes
                         )
-                        navController.navigate("main"){
-                            popUpTo("main"){inclusive = true}
+
+                        navController.navigate("main") {
+                            popUpTo("main") { inclusive = true }
                         }
                     }
                 },
@@ -1460,36 +1496,43 @@ fun ClothesSetting(
     val memberId by authViewModel.memberId
     val memberProfile by authViewModel.memberProfile
 
-    val (outerwear, setOuterwear) = remember {
+    // 사용자가 이미 보유하고 있는 옷 조회
+    val ownedClothes = remember(memberProfile.clothes) {
+        memberProfile.clothes
+            .map { it.trim().uppercase() }
+            .toSet()
+    }
+
+    val (outerwear, setOuterwear) = remember(ownedClothes) {
         mutableStateOf(
             mapOf(
-                "Puffer Jacket" to false,
-                "Coat" to false,
-                "Fleece" to false,
-                "Jacket" to false,
-                "Windbreaker" to false
+                "Puffer Jacket" to ("PUFFER_JACKET" in ownedClothes),
+                "Coat"          to ("COAT" in ownedClothes),
+                "Fleece"        to ("FLEECE" in ownedClothes),
+                "Jacket"        to ("JACKET" in ownedClothes),
+                "Windbreaker"   to ("WINDBREAKER" in ownedClothes)
             )
         )
     }
 
-    val (tops, setTops) = remember {
+    val (tops, setTops) = remember(ownedClothes) {
         mutableStateOf(
             mapOf(
-                "Sweater" to false,
-                "Hoodie" to false,
-                "Shirt" to false,
-                "Long sleeve" to false,
-                "Short sleeve" to false
+                "Sweater"      to ("SWEATER" in ownedClothes),
+                "Hoodie"       to ("HOODIE" in ownedClothes),
+                "Shirt"        to ("SHIRT" in ownedClothes),
+                "Long sleeve"  to ("LONG_SLEEVE" in ownedClothes),
+                "Short sleeve" to ("SHORT_SLEEVE" in ownedClothes)
             )
         )
     }
 
-    val (bottoms, setBottoms) = remember {
+    val (bottoms, setBottoms) = remember(ownedClothes) {
         mutableStateOf(
             mapOf(
-                "Jeans" to false,
-                "Cotton pants" to false,
-                "Shorts" to false
+                "Jeans"        to ("JEANS" in ownedClothes),
+                "Cotton pants" to ("COTTON_PANTS" in ownedClothes),
+                "Shorts"       to ("SHORTS" in ownedClothes)
             )
         )
     }
