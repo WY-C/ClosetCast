@@ -1441,7 +1441,7 @@ fun ClothingItem(name: String, isSelected: Boolean, onToggle: (Boolean) -> Unit)
             .fillMaxWidth()
             .padding(8.dp)
     ) {
-        Checkbox(checked = isSelected, onCheckedChange = onToggle)
+        Switch(checked = isSelected, onCheckedChange = onToggle)
         Spacer(modifier = Modifier.width(8.dp))
         Text(text = name, fontSize = 16.sp)
     }
@@ -1464,10 +1464,10 @@ fun ClothesSetting(
         mutableStateOf(
             mapOf(
                 "Puffer Jacket" to false,
-                "coat" to false,
+                "Coat" to false,
                 "Fleece" to false,
-                "jacket" to false,
-                "windbreaker" to false
+                "Jacket" to false,
+                "Windbreaker" to false
             )
         )
     }
@@ -1475,11 +1475,11 @@ fun ClothesSetting(
     val (tops, setTops) = remember {
         mutableStateOf(
             mapOf(
-                "sweater" to false,
-                "hoodie" to false,
-                "shirt" to false,
-                "long sleeve" to false,
-                "short sleeve" to false
+                "Sweater" to false,
+                "Hoodie" to false,
+                "Shirt" to false,
+                "Long sleeve" to false,
+                "Short sleeve" to false
             )
         )
     }
@@ -1487,9 +1487,9 @@ fun ClothesSetting(
     val (bottoms, setBottoms) = remember {
         mutableStateOf(
             mapOf(
-                "jeans" to false,
-                "cotton pants" to false,
-                "shorts" to false
+                "Jeans" to false,
+                "Cotton pants" to false,
+                "Shorts" to false
             )
         )
     }
