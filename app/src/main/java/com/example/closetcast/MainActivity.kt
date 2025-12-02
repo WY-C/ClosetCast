@@ -12,6 +12,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -42,6 +43,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -509,6 +512,13 @@ fun MainScreen(navController: NavController, authViewModel: AuthViewModel = view
     val isLoading by weatherViewModel.isLoading
     val errorMessage by weatherViewModel.error
 
+    val backgroundBrush = Brush.verticalGradient(
+        colors = listOf(
+            Color(0xFF7CB5FF),
+            Color(0xFF001ECB)
+        )
+    )
+
     // 앱 시작 시 위치 정보 요청
     LaunchedEffect(Unit) {
         Log.d("MainScreen", "LaunchedEffect 시작")
@@ -529,6 +539,11 @@ fun MainScreen(navController: NavController, authViewModel: AuthViewModel = view
         "Edit Personal Information" to "styleandsensitivity?isSignUpProcess=false"
     )
 
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(backgroundBrush)   // ✅ 메인 화면 배경
+    ) {
     ModalNavigationDrawer(
         drawerState = drawerState,
         drawerContent = {
@@ -585,7 +600,7 @@ fun MainScreen(navController: NavController, authViewModel: AuthViewModel = view
                             BottomNavItem.Clothing.route -> BottomNavItem.Clothing.title
                             else -> "ClosetCast"
                         }
-                        Text(title)
+                        Text(text = title, color = Color.White)
                     },
                     navigationIcon = {
                         IconButton(onClick = {
@@ -597,12 +612,15 @@ fun MainScreen(navController: NavController, authViewModel: AuthViewModel = view
                         }) {
                             Icon(
                                 imageVector = Icons.Default.Menu,
-                                contentDescription = "Menu"
+                                contentDescription = "Menu",
+                                tint = Color.White
                             )
                         }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.primaryContainer
+                        containerColor = Color.Transparent,
+                        titleContentColor = Color.White,        // 기본 타이틀 색
+                        navigationIconContentColor = Color.White
                     )
                 )
             },
@@ -627,7 +645,9 @@ fun MainScreen(navController: NavController, authViewModel: AuthViewModel = view
                         )
                     }
                 }
-            }
+            },
+            containerColor = Color.Transparent,
+            contentColor = MaterialTheme.colorScheme.onBackground
         ) { innerPadding ->
             NavHost(
                 bottomBarNavController,
@@ -668,6 +688,7 @@ fun MainScreen(navController: NavController, authViewModel: AuthViewModel = view
         }
     }
 }
+}
 
 @Composable
 fun WeatherScreen(weatherData: WeatherData) {
@@ -694,13 +715,13 @@ fun CurrentWeatherCard(currentWeather: CurrentWeather) {
         verticalArrangement = Arrangement.Center,
         modifier = Modifier.fillMaxWidth()
     ) {
-        Text(text = "The temperature is now... ", fontSize = 20.sp, fontWeight = FontWeight.Bold)
+        Text(text = "The temperature is now... ", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.White)
         Spacer(modifier = Modifier.height(8.dp))
-        Text(text = currentWeather.location, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+        Text(text = currentWeather.location, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.White)
         Spacer(modifier = Modifier.height(8.dp))
-        Text(text = "${currentWeather.temperature}°", fontSize = 64.sp, fontWeight = FontWeight.Bold)
+        Text(text = "${currentWeather.temperature}°", fontSize = 64.sp, fontWeight = FontWeight.Bold, color = Color.White)
         Spacer(modifier = Modifier.height(8.dp))
-        Text(text = "Min: ${currentWeather.minTemp}° Max: ${currentWeather.maxTemp}°", fontSize = 16.sp)
+        Text(text = "Min: ${currentWeather.minTemp}° Max: ${currentWeather.maxTemp}°", fontSize = 16.sp, color = Color.White)
         Spacer(modifier = Modifier.height(12.dp))
         ApparentTemperatureCard(currentWeather.apparentTemperature)
     }
@@ -709,7 +730,7 @@ fun CurrentWeatherCard(currentWeather: CurrentWeather) {
 @Composable
 fun HourlyForecastCard(hourlyForecasts: List<HourlyForecast>) {
     Column(modifier = Modifier.fillMaxWidth()) {
-        Text(text = "Hourly Forecast", fontSize = 20.sp, fontWeight = FontWeight.Bold)
+        Text(text = "Hourly Forecast", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.White)
         Spacer(modifier = Modifier.height(8.dp))
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -719,11 +740,11 @@ fun HourlyForecastCard(hourlyForecasts: List<HourlyForecast>) {
                 .take(6)
                 .forEach { forecast ->
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(text = forecast.time, fontSize = 16.sp)
+                    Text(text = forecast.time, fontSize = 16.sp, color = Color.White)
                     Spacer(modifier = Modifier.height(4.dp))
-                    Icon(forecast.weatherIcon, contentDescription = null, modifier = Modifier.size(32.dp))
+                    Icon(forecast.weatherIcon, contentDescription = null, modifier = Modifier.size(32.dp),tint = Color.White )
                     Spacer(modifier = Modifier.height(4.dp))
-                    Text(text = "${forecast.temperature}°", fontSize = 16.sp)
+                    Text(text = "${forecast.temperature}°", fontSize = 16.sp, color = Color.White)
                 }
             }
         }
@@ -733,7 +754,7 @@ fun HourlyForecastCard(hourlyForecasts: List<HourlyForecast>) {
 @Composable
 fun DailyForecastCard(dailyForecasts: List<DailyForecast>) {
     Column(modifier = Modifier.fillMaxWidth()) {
-        Text(text = "3-Day Forecast", fontSize = 20.sp, fontWeight = FontWeight.Bold)
+        Text(text = "3-Day Forecast", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.White)
         Spacer(modifier = Modifier.height(8.dp))
 
         dailyForecasts.forEach { forecast ->
@@ -748,6 +769,7 @@ fun DailyForecastCard(dailyForecasts: List<DailyForecast>) {
                     text = forecast.day,
                     fontSize = 16.sp,
                     modifier = Modifier.weight(1f)
+                    , color = Color.White
                 )
 
                 // 아이콘
@@ -759,7 +781,8 @@ fun DailyForecastCard(dailyForecasts: List<DailyForecast>) {
                     Icon(
                         forecast.weatherIcon,
                         contentDescription = null,
-                        modifier = Modifier.size(32.dp)
+                        modifier = Modifier.size(32.dp),
+                        tint = Color.White
                     )
                 }
 
@@ -768,6 +791,7 @@ fun DailyForecastCard(dailyForecasts: List<DailyForecast>) {
                     text = "Min: ${forecast.minTemp}°",
                     fontSize = 16.sp,
                     modifier = Modifier.weight(1f)
+                    , color = Color.White
                 )
 
                 // Max
@@ -775,6 +799,7 @@ fun DailyForecastCard(dailyForecasts: List<DailyForecast>) {
                     text = "Max: ${forecast.maxTemp}°",
                     fontSize = 16.sp,
                     modifier = Modifier.weight(1f)
+                    , color = Color.White
                 )
             }
         }
@@ -833,7 +858,7 @@ fun ClothingRecommendationCard(
         ) {
             // Outer Wear Card
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(text = "Outer", style = MaterialTheme.typography.titleMedium)
+                Text(text = "Outer", style = MaterialTheme.typography.titleMedium, color = Color.White)
                 Box(
                     modifier = Modifier
                         .size(120.dp)
@@ -849,11 +874,11 @@ fun ClothingRecommendationCard(
                     }
                 }
                 Spacer(modifier = Modifier.height(8.dp))
-                Text(text = recommendation.outer, style = MaterialTheme.typography.bodyLarge)
+                Text(text = recommendation.outer, style = MaterialTheme.typography.bodyLarge, color = Color.White)
             }
             // Top Wear Card
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(text = "Top", style = MaterialTheme.typography.titleMedium)
+                Text(text = "Top", style = MaterialTheme.typography.titleMedium, color = Color.White)
                 Box(
                     modifier = Modifier
                         .size(120.dp)
@@ -869,12 +894,12 @@ fun ClothingRecommendationCard(
                     }
                 }
                 Spacer(modifier = Modifier.height(8.dp))
-                Text(text = recommendation.top, style = MaterialTheme.typography.bodyLarge)
+                Text(text = recommendation.top, style = MaterialTheme.typography.bodyLarge, color = Color.White)
             }
 
             // Bottom Wear Card (여기 추가)
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(text = "Bottom", style = MaterialTheme.typography.titleMedium)
+                Text(text = "Bottom", style = MaterialTheme.typography.titleMedium, color = Color.White)
                 Box(
                     modifier = Modifier
                         .size(120.dp)
@@ -890,7 +915,7 @@ fun ClothingRecommendationCard(
                     }
                 }
                 Spacer(modifier = Modifier.height(8.dp))
-                Text(text = recommendation.bottom, style = MaterialTheme.typography.bodyLarge)
+                Text(text = recommendation.bottom, style = MaterialTheme.typography.bodyLarge, color = Color.White)
             }
         }
         Spacer(modifier = Modifier.height(24.dp))
@@ -899,12 +924,13 @@ fun ClothingRecommendationCard(
                 Log.d("ClothingCard", "버튼 클릭됨!")
                 onRefreshClick()
             },
-            enabled = !isLoading
+            enabled = !isLoading,
+            border = BorderStroke(2.dp, Color.White)
         ) {
             if (isLoading) {
                 CircularProgressIndicator(modifier = Modifier.size(16.dp))
             } else {
-                Text("Other Recommendations")
+                Text("Other Recommendations", color = Color.White)
             }
         }
     }
