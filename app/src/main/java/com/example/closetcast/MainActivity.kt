@@ -58,32 +58,6 @@ import com.example.closetcast.ui.theme.ClosetCastTheme
 import kotlinx.coroutines.launch
 import kotlin.random.Random
 
-// ===================== 위치 관리 유틸리티 =====================
-class LocationManager(private val context: Context) {
-    private val locationManager = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
-
-    fun requestLocationUpdates(onLocationReceived: (Double, Double) -> Unit) {
-
-        if (ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION)
-            == PackageManager.PERMISSION_GRANTED) {
-            try {
-                val location = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER)
-                if (location != null) {
-                    onLocationReceived(location.latitude, location.longitude)
-                } else {
-                    // GPS 기반 위치 없으면 네트워크 기반 위치 시도
-                    val networkLocation = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER)
-                    if (networkLocation != null) {
-                        onLocationReceived(networkLocation.latitude, networkLocation.longitude)
-                    }
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-        }
-    }
-}
-
 class MainActivity : ComponentActivity() {
 
     // ✅ 새로운 방식: Activity Result Contract 사용
@@ -937,17 +911,20 @@ fun ClothingRecommendationCard(
 }
 
 fun getImageResourceForClothingName(name: String): Int {
-    return when (name.trim().lowercase()) {
-        "puffer jacket" -> R.drawable.puffer_coat
-        "coat" -> R.drawable.trench_coat
-        "fleece" -> R.drawable.fleece
-        "sweater" -> R.drawable.sweater
-        "hoodie" -> R.drawable.hoodie
-        "short sleeve" -> R.drawable.short_sleeves
-        "long sleeve" -> R.drawable.long_sleeves
-        "jeans" -> R.drawable.jeans
-        "cotton pants" -> R.drawable.trouser
-        "shorts" -> R.drawable.shorts
+    return when (name.trim().uppercase()) {
+        "PUFFER JACKET" -> R.drawable.puffer_coat
+        "COAT" -> R.drawable.trench_coat
+        "FLEECE" -> R.drawable.fleece
+        "JACKET" -> R.drawable.jacket
+        "WINDBREAKER" -> R.drawable.windbreaker
+        "SWEATER" -> R.drawable.sweater
+        "HOODIE" -> R.drawable.hoodie
+        "SHIRT" -> R.drawable.shirts
+        "SHORT SLEEVE" -> R.drawable.short_sleeves
+        "LONG SLEEVE" -> R.drawable.long_sleeves
+        "JEANS" -> R.drawable.jeans
+        "COTTON PANTS" -> R.drawable.trouser
+        "SHORTS" -> R.drawable.shorts
         else -> R.drawable.default_clothing // default image
     }
 }
@@ -961,41 +938,41 @@ fun getRecommendationForTemperature(temp: Double): ClothingRecommendation {
     when {
         temp >= 28.0 -> {
             outerList = listOf("None")
-            topList = listOf("Short sleeve")
+            topList = listOf("Short Sleeve")
             bottomList = listOf("Shorts")
         }
         temp in 23.0..27.0 -> {
             outerList = listOf("None")
-            topList = listOf("Short sleeve", "Shirt")
+            topList = listOf("Short sleeve", "Long Sleeve")
             bottomList = listOf("Shorts", "Cotton pants")
         }
         temp in 20.0..22.0 -> {
-            outerList = listOf("Spring/Fall Jacket")
-            topList = listOf("Shirt", "Long sleeve", "Sweater")
+            outerList = listOf("WindBreaker")
+            topList = listOf("Shirt", "Long sleeve", "Short Sleeve")
             bottomList = listOf("Jeans", "Cotton pants")
         }
         temp in 17.0..19.0 -> {
-            outerList = listOf("Sweatshirt", "Hoodie")
-            topList = listOf("Shirt", "Sweater")
+            outerList = listOf("Jacket", "WindBreaker")
+            topList = listOf("Shirt", "Hoodie", "Long Sleeve")
             bottomList = listOf("Jeans", "Cotton pants")
         }
         temp in 12.0..16.0 -> {
-            outerList = listOf("Leather Jacket", "Blouson", "Stadium Jacket", "Light Jacket", "Windbreaker")
-            topList = listOf("Sweater", "Shirt")
+            outerList = listOf("Jacket", "Windbreaker", "Coat")
+            topList = listOf("Sweater", "Shirt", "Hoodie", "Long Sleeve")
             bottomList = listOf("Jeans", "Cotton pants")
         }
         temp in 9.0..11.0 -> {
-            outerList = listOf("Coat", "Trench coat", "Fleece")
-            topList = listOf("Sweater")
+            outerList = listOf("Coat", "Fleece", "Jacket")
+            topList = listOf("Sweater", "Hoodie", "Long Sleeve")
             bottomList = listOf("Jeans", "Cotton pants")
         }
         temp in 5.0..8.0 -> {
             outerList = listOf("Coat", "Puffer Jacket", "Fleece")
-            topList = listOf("Sweatshirt", "Sweater")
+            topList = listOf("Sweater", "Hoodie")
             bottomList = listOf("Jeans", "Cotton pants")
         }
         else -> {
-            outerList = listOf("Puffer Jacket (Short, Long)", "Heavy outer")
+            outerList = listOf("Puffer Jacket")
             topList = listOf("Sweater", "Hoodie")
             bottomList = listOf("Jeans", "Cotton pants")
         }
