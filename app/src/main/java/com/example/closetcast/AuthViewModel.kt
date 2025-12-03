@@ -48,6 +48,7 @@ class AuthViewModel : ViewModel() {
             _error.value = null
 
             try {
+
                 withContext(Dispatchers.IO) {
                     Log.d("AuthViewModel", "========== 로그인 시작 ==========")
                     Log.d("AuthViewModel", "로그인 ID: $loginId")
@@ -97,7 +98,7 @@ class AuthViewModel : ViewModel() {
                     }
                 }
             } catch (e: Exception) {
-                val errorMessage = "Error during login: ${e.message}"
+                val errorMessage = "Please check your ID or Password"
                 Log.e("AuthViewModel", errorMessage, e)
                 _error.value = errorMessage
                 _isLoading.value = false
@@ -207,7 +208,7 @@ class AuthViewModel : ViewModel() {
                 }
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
-                    _error.value = "Error during update: ${e.localizedMessage}"
+                    _error.value = "Please check your Password"
                     _isLoading.value = false
                 }
             }

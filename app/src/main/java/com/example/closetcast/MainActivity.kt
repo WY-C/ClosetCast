@@ -939,6 +939,7 @@ fun ClothingRecommendationCard(
 fun getImageResourceForClothingName(name: String): Int {
     return when (name.trim().uppercase()) {
         "PUFFER JACKET" -> R.drawable.puffer_coat
+        "PUFFER_JACKET" -> R.drawable.puffer_coat
         "COAT" -> R.drawable.trench_coat
         "FLEECE" -> R.drawable.fleece
         "JACKET" -> R.drawable.jacket
@@ -947,9 +948,12 @@ fun getImageResourceForClothingName(name: String): Int {
         "HOODIE" -> R.drawable.hoodie
         "SHIRT" -> R.drawable.shirts
         "SHORT SLEEVE" -> R.drawable.short_sleeves
+        "SHORT_SLEEVE" -> R.drawable.short_sleeves
         "LONG SLEEVE" -> R.drawable.long_sleeves
+        "LONG_SLEEVE" -> R.drawable.long_sleeves
         "JEANS" -> R.drawable.jeans
         "COTTON PANTS" -> R.drawable.trouser
+        "COTTON_PANTS" -> R.drawable.trouser
         "SHORTS" -> R.drawable.shorts
         else -> R.drawable.default_clothing // default image
     }
@@ -1084,7 +1088,7 @@ fun ChangePasswordScreen(
             // 에러 메시지
             if (error != null) {
                 Text(
-                    text = "오류: $error",
+                    text = "Please check your old and new Password",
                     color = MaterialTheme.colorScheme.error,
                     modifier = Modifier
                         .fillMaxWidth()
@@ -1510,21 +1514,22 @@ fun ClothingItem(name: String, isSelected: Boolean, onToggle: (Boolean) -> Unit)
 @Composable
 fun ClothesSetting(
     navController: NavController,
-    authViewModel: AuthViewModel = viewModel()
+    authViewModel: AuthViewModel
 ) {
     val context = LocalContext.current
     val isLoading by authViewModel.isLoading
     val error by authViewModel.error
     val memberId by authViewModel.memberId
-    val memberProfile by authViewModel.memberProfile
+    val memberProfile by authViewModel.memberProfile   // 여기에 clothes 리스트가 들어있다고 가정
 
-    // 사용자가 이미 보유하고 있는 옷 조회
+    // 1) 사용자가 가진 옷 set (서버 포맷 → Set)
     val ownedClothes = remember(memberProfile.clothes) {
         memberProfile.clothes
             .map { it.trim().uppercase() }
             .toSet()
     }
 
+    // 2) 초기값을 ownedClothes 기준으로 true/false 세팅
     val (outerwear, setOuterwear) = remember(ownedClothes) {
         mutableStateOf(
             mapOf(
@@ -1724,13 +1729,6 @@ fun MainScreenPreview() {
     }
 }
 
-@Preview(showBackground = true)
-@Composable
-fun ClothesSettingPreview() {
-    ClosetCastTheme {
-        ClothesSetting(navController = rememberNavController())
-    }
-}
 
 @Preview(showBackground = true)
 @Composable
