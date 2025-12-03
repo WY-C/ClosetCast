@@ -7,6 +7,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.closetcast.api.*
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -36,6 +38,9 @@ class AuthViewModel : ViewModel() {
 
     private val _memberProfile = mutableStateOf(MemberProfile())
     val memberProfile: State<MemberProfile> = _memberProfile
+
+    private val _signUpSuccess = MutableStateFlow(false)
+    val signUpSuccess: StateFlow<Boolean> = _signUpSuccess
 
     fun login(loginId: String, password: String) {
         viewModelScope.launch {
@@ -119,20 +124,17 @@ class AuthViewModel : ViewModel() {
                 val response = RetrofitClient.authApiService.signUp(signUpRequest)
 
                 if (response.isSuccess) {
-                    // 성공 시, 응답에서 필요한 데이터 활용
                     val result = response.result
-
                     withContext(Dispatchers.Main) {
-                        // 예시: 사용자 정보 업데이트 및 로그인 상태를 true로 변경
                         _userInfo.value = result.name
-
                         _isLoading.value = false
+                        _signUpSuccess.value = true      // ✅ 회원가입 성공 신호
                     }
-
                 } else {
                     withContext(Dispatchers.Main) {
                         _error.value = response.message
                         _isLoading.value = false
+                        _signUpSuccess.value = false
                     }
                 }
 

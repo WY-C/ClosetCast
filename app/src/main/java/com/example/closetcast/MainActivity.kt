@@ -1345,6 +1345,21 @@ fun StyleAndSensitivityScreen(
             }
         )
     }
+    val signUpSuccess by authViewModel.signUpSuccess.collectAsState()
+
+    LaunchedEffect(signUpSuccess) {
+        if (isSignUpProcess && signUpSuccess) {
+            navController.navigate("login") {
+                popUpTo("login") { inclusive = true }
+            }
+            Toast.makeText(
+                context,
+                "Sign up completed. Please log in.",
+                Toast.LENGTH_SHORT
+            ).show()
+        }
+    }
+
     Scaffold(
         topBar = {
             if (!isSignUpProcess) {
@@ -1377,7 +1392,11 @@ fun StyleAndSensitivityScreen(
                                 tendencies = tendencies
                             )
                         } else {
-                            Toast.makeText(context, "Required sign up information missing.", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(
+                                context,
+                                "Required sign up information missing.",
+                                Toast.LENGTH_SHORT
+                            ).show()
                         }
                     } else {
                         // ✅ 메인에서 들어온 경우: 기존 값 기반으로 수정
