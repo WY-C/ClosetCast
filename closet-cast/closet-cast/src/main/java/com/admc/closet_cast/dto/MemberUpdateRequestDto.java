@@ -8,11 +8,12 @@ import java.util.List;
 
 public record MemberUpdateRequestDto(
         String password,
+        String newPassword,
         List<Preference> preference,
         List<Tendency> tendencies,
         List<Cloth> clothes
 ) {
-    public static MemberUpdateRequestDto of(String password, List<Preference> preference, List<Tendency> tendencies, List<Cloth> clothes) {
-        return new MemberUpdateRequestDto(password, preference, tendencies, clothes);
+    public static MemberUpdateRequestDto of(String password, String newPassword, List<Preference> preference, List<Tendency> tendencies, List<Cloth> clothes) {
+        return new MemberUpdateRequestDto(password, newPassword, preference, tendencies, clothes);
     }
 }

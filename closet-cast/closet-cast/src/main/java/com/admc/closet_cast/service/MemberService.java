@@ -96,8 +96,12 @@ public class MemberService {
                 () -> new MemberHandler(ErrorStatus.MEMBER_NOT_FOUND)
         );
 
-        if (requestDto.password() != null) {
-            String encodedPassword = passwordEncoder.encode(requestDto.password());
+        if (requestDto.newPassword() != null) {
+            if (!passwordEncoder.matches(requestDto.password(), member.getPassword())) {
+                throw new MemberHandler(ErrorStatus.INVALID_ID_OR_PASSWORD);
+            }
+
+            String encodedPassword = passwordEncoder.encode(requestDto.newPassword());
             member.setPassword(encodedPassword);
         }
         if (requestDto.preference() != null) {
