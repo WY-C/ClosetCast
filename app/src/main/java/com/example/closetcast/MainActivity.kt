@@ -1062,6 +1062,15 @@ fun ChangePasswordScreen(
     val error by authViewModel.error
     val memberId by authViewModel.memberId
     val memberProfile by authViewModel.memberProfile
+
+    val passwordChangeSuccess by authViewModel.passwordChangeSuccess.collectAsState()
+
+    LaunchedEffect(passwordChangeSuccess) {
+        if (passwordChangeSuccess) {
+            navController.popBackStack()
+            Toast.makeText(context, "Password changed successfully", Toast.LENGTH_SHORT).show()
+        }
+    }
     Scaffold(
         topBar = {
             TopAppBar(
@@ -1088,7 +1097,7 @@ fun ChangePasswordScreen(
             // 에러 메시지
             if (error != null) {
                 Text(
-                    text = "Please check your old and new Password",
+                    text = "Error: $error",
                     color = MaterialTheme.colorScheme.error,
                     modifier = Modifier
                         .fillMaxWidth()
@@ -1168,7 +1177,6 @@ fun ChangePasswordScreen(
                                 tendencies = null,
                                 clothes = null
                             )
-                            navController.popBackStack()
                         }
                     }
                 },

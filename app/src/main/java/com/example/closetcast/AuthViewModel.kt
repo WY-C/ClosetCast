@@ -42,6 +42,9 @@ class AuthViewModel : ViewModel() {
     private val _signUpSuccess = MutableStateFlow(false)
     val signUpSuccess: StateFlow<Boolean> = _signUpSuccess
 
+    private val _passwordChangeSuccess = MutableStateFlow(false)
+    val passwordChangeSuccess: StateFlow<Boolean> = _passwordChangeSuccess
+
     fun login(loginId: String, password: String) {
         viewModelScope.launch {
             _isLoading.value = true
@@ -210,6 +213,9 @@ class AuthViewModel : ViewModel() {
                             clothes    = clothes ?: current.clothes
                         )
 
+                        if (password != null || newPassword != null) {
+                            _passwordChangeSuccess.value = true
+                        }
 
                         // 필요하면 userInfo 등 다른 상태도 갱신
                         _userInfo.value = memberId.toString()
@@ -217,16 +223,17 @@ class AuthViewModel : ViewModel() {
                     } else {
                         // ✅ HTTP 코드에 따라 메시지 가공 (예시는 403이 “현재 비밀번호 오류”인 경우)
                         _error.value = if (response.code == "403") {
-                            "현재 비밀번호가 올바르지 않습니다."
+                            "Current Password is not correct."
                         } else {
-                            response.message ?: "비밀번호 변경에 실패했습니다."
+                            response.message ?: "Fail to change the Password."
                         }
                         _isLoading.value = false
+                        _passwordChangeSuccess.value = false
                     }
                 }
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
-                    _error.value = "Please check your Password"
+                    _error.value = "Your current Password does not match"
                     _isLoading.value = false
                 }
             }
