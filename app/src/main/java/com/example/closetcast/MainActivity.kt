@@ -133,71 +133,59 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun AppNavigation(authViewModel: AuthViewModel) {
     val navController = rememberNavController()
-    NavHost(navController = navController, startDestination = "login") {
-        composable("login") {
-            LoginScreen(navController = navController, authViewModel = authViewModel)
-        }
-        composable("signup"){
-            SignUpScreen(navController = navController)
-        }
-        composable("main") {
-            MainScreen(navController = navController, authViewModel = authViewModel)
-        }
-        composable(
-            route = "styleandsensitivity?isSignUpProcess={isSignUpProcess}&name={name}&loginId={loginId}&password={password}",
-            arguments = listOf(
-                navArgument("isSignUpProcess") {
-                    type = NavType.BoolType
-                    defaultValue = false
-                },
-                navArgument("name") {
-                    type = NavType.StringType
-                    nullable = true
-                    defaultValue = null
-                },
-                navArgument("loginId") {
-                    type = NavType.StringType
-                    nullable = true
-                    defaultValue = null
-                },
-                navArgument("password") {
-                    type = NavType.StringType
-                    nullable = true
-                    defaultValue = null
-                }
-            )
-        ) { backStackEntry ->
-            val isSignUpProcess = backStackEntry.arguments?.getBoolean("isSignUpProcess") ?: false
-            val name = backStackEntry.arguments?.getString("name")
-            val loginId = backStackEntry.arguments?.getString("loginId")
-            val password = backStackEntry.arguments?.getString("password")
 
+    NavHost(
+        navController = navController,
+        startDestination = "login"
+    ) {
+        composable("login") {
+            LoginScreen(
+                navController = navController,
+                authViewModel = authViewModel
+            )
+        }
+
+        composable("signup") {
+            SignUpScreen(
+                navController = navController,
+                authViewModel = authViewModel
+            )
+        }
+
+        composable("main") {
+            MainScreen(
+                navController = navController,
+                authViewModel = authViewModel
+            )
+        }
+
+        // ✅ 스타일 & 민감도: 항상 프로필 수정용 (회원가입 인자 제거)
+        composable("styleandsensitivity") {
             StyleAndSensitivityScreen(
                 navController = navController,
-                authViewModel = authViewModel,
-                isSignUpProcess = isSignUpProcess,
-                signUpName = name,
-                signUpLoginId = loginId,
-                signUpPassword = password
+                authViewModel = authViewModel
             )
         }
+
         composable("clothessetting") {
             ClothesSetting(
                 navController = navController,
                 authViewModel = authViewModel
             )
         }
+
         composable("changepassword") {
             ChangePasswordScreen(
                 navController = navController,
                 authViewModel = authViewModel
             )
         }
+
         composable("withdraw") {
             WithdrawScreen(
                 navController = navController,
                 authViewModel = authViewModel
-                )
+            )
         }
     }
 }
@@ -327,6 +315,17 @@ fun SignUpScreen(navController: NavController, authViewModel: AuthViewModel = vi
     val isLoading by authViewModel.isLoading
     val error by authViewModel.error
 
+    val signUpSuccess by authViewModel.signUpSuccess.collectAsState()   // StateFlow<Boolean> 이라고 가정
+
+    LaunchedEffect(signUpSuccess) {
+        if (signUpSuccess) {
+            // ✅ 회원가입 성공 → 스타일/민감도 설정 화면으로
+            navController.navigate("styleandsensitivity") {
+                popUpTo("signup") { inclusive = true }
+            }
+        }
+    }
+
 
     Scaffold { innerPadding ->
         Column(
@@ -412,14 +411,14 @@ fun SignUpScreen(navController: NavController, authViewModel: AuthViewModel = vi
                     if (name.isNotBlank() &&
                         loginId.isNotBlank() &&
                         password.length >= 6 &&
-                        password == passwordCheck) {
-
-                        // ✅ 스타일-민감도 화면으로 전환
-                        navController.navigate(
-                            "styleandsensitivity?isSignUpProcess=true" +
-                                    "&name=${Uri.encode(name)}" +
-                                    "&loginId=${Uri.encode(loginId)}" +
-                                    "&password=${Uri.encode(password)}"
+                        password == passwordCheck
+                    ) {
+                        authViewModel.signUp(
+                            name = name,
+                            loginId = loginId,
+                            password = password,
+                            preference = emptyList(),   // ✅ 일단 빈 값으로 보내기
+                            tendencies = emptyList()
                         )
                     } else {
                         Toast.makeText(
@@ -1306,11 +1305,7 @@ fun getStyleImageResource(style: String): Int {
 @Composable
 fun StyleAndSensitivityScreen(
     navController: NavController,
-    authViewModel: AuthViewModel,
-    isSignUpProcess: Boolean = false,
-    signUpName: String? = null,
-    signUpLoginId: String? = null,
-    signUpPassword: String? = null
+    authViewModel: AuthViewModel
 ) {
     val styles = listOf("Minimal", "Casual", "Street", "Classic", "Dandy", "Retro")
 
@@ -1319,60 +1314,34 @@ fun StyleAndSensitivityScreen(
     val error by authViewModel.error
     val memberId by authViewModel.memberId
     val memberProfile by authViewModel.memberProfile
+    val updateSuccess by authViewModel.updateSuccess.collectAsState()
 
-    // ✅ 서버에 저장된 값 (수정 모드에서만 사용)
+    // ✅ 서버에 저장된 값 (항상 “수정 모드”로 사용)
     val savedPreference = memberProfile.preference
     val savedTendencies = memberProfile.tendencies
 
-    val selectedStyles = rememberSaveable(isSignUpProcess, memberProfile) {
-        if (isSignUpProcess) {
-            mutableStateListOf()
-        } else {
-            mutableStateListOf<String>().apply {
-                // 서버에서 온 값은 이미 대문자라고 가정 → 첫 글자만 대문자로 다시 맞춰줌
-                addAll(
-                    savedPreference.map { pref ->
-                        pref.lowercase().replaceFirstChar { it.titlecase() }
-                    }.filter { it in styles }
-                )
-            }
+    // 스타일 선택 초기값
+    val selectedStyles = rememberSaveable(memberProfile) {
+        mutableStateListOf<String>().apply {
+            addAll(
+                savedPreference.map { pref ->
+                    pref.lowercase().replaceFirstChar { it.titlecase() }
+                }.filter { it in styles }
+            )
         }
     }
 
-    var heatSensitive by rememberSaveable(isSignUpProcess, memberProfile) {
-        mutableStateOf(
-            if (isSignUpProcess) {
-                false
-            } else {
-                "HOT" in savedTendencies
-            }
-        )
+    // 민감도 스위치 초기값
+    var heatSensitive by rememberSaveable(memberProfile) {
+        mutableStateOf("HOT" in savedTendencies)
+    }
+    var coldSensitive by rememberSaveable(memberProfile) {
+        mutableStateOf("COLD" in savedTendencies)
     }
 
-    var coldSensitive by rememberSaveable(isSignUpProcess, memberProfile) {
-        mutableStateOf(
-            if (isSignUpProcess) {
-                false
-            } else {
-                "COLD" in savedTendencies
-            }
-        )
-    }
-    val signUpSuccess by authViewModel.signUpSuccess.collectAsState()
-    val updateSuccess by authViewModel.updateSuccess.collectAsState()
-
-    LaunchedEffect(signUpSuccess,updateSuccess) {
-        if (isSignUpProcess && signUpSuccess) {
-            navController.navigate("login") {
-                popUpTo("login") { inclusive = true }
-            }
-            Toast.makeText(
-                context,
-                "Sign up completed. Please log in.",
-                Toast.LENGTH_SHORT
-            ).show()
-        }
-        else if (!isSignUpProcess && updateSuccess) { // 메인화면에서 유저 정보 업데이트 성공
+    // ✅ 수정 성공 시에만 메인으로 이동
+    LaunchedEffect(updateSuccess) {
+        if (updateSuccess) {
             navController.navigate("main") {
                 popUpTo("main") { inclusive = true }
             }
@@ -1381,74 +1350,63 @@ fun StyleAndSensitivityScreen(
                 "Update your personal Information completed.",
                 Toast.LENGTH_SHORT
             ).show()
+            // 필요하면 authViewModel.resetUpdateSuccess() 호출
         }
     }
 
     Scaffold(
         topBar = {
-            if (!isSignUpProcess) {
-                TopAppBar(
-                    title = { Text("Edit Personal Information") },
-                    navigationIcon = {
-                        IconButton(onClick = { navController.popBackStack() }) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                        }
+            TopAppBar(
+                title = { Text("Edit Personal Information") },
+                navigationIcon = {
+                    IconButton(onClick = { navController.popBackStack() }) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
-                )
-            }
+                }
+            )
         },
         bottomBar = {
             Button(
                 onClick = {
-                    val preference = selectedStyles.map { it.uppercase() }.ifEmpty { listOf("CASUAL") }
+                    val preference = selectedStyles
+                        .map { it.uppercase() }
+                        .ifEmpty { listOf("CASUAL") }
+
                     val tendencies = buildList {
                         if (heatSensitive) add("HOT")
                         if (coldSensitive) add("COLD")
                     }
 
-                    if (isSignUpProcess) {
-                        if (signUpName != null && signUpLoginId != null && signUpPassword != null) {
-                            authViewModel.signUp(
-                                name = signUpName,
-                                loginId = signUpLoginId,
-                                password = signUpPassword,
-                                preference = preference,
-                                tendencies = tendencies
-                            )
-                        } else {
-                            Toast.makeText(
-                                context,
-                                "Required sign up information missing.",
-                                Toast.LENGTH_SHORT
-                            ).show()
-                        }
-                    } else {
-                        // ✅ 메인에서 들어온 경우: 기존 값 기반으로 수정
-                        if (memberId == null) {
-                            Toast.makeText(
-                                context,
-                                "Cannot fetch member info",
-                                Toast.LENGTH_SHORT
-                            ).show()
-                            return@Button
-                        }
-                        authViewModel.updateMember(
-                            memberId = memberId!!,
-                            password = null,
-                            newPassword = null,
-                            preference = preference,
-                            tendencies = tendencies,
-                            clothes = null
-                        )
+                    if (memberId == null) {
+                        Toast.makeText(
+                            context,
+                            "Cannot fetch member info",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                        return@Button
                     }
+
+                    authViewModel.updateMember(
+                        memberId = memberId!!,
+                        password = null,
+                        newPassword = null,
+                        preference = preference,
+                        tendencies = tendencies,
+                        clothes = null   // 옷 정보는 여기서 안 건드림
+                    )
                 },
-                modifier = Modifier.fillMaxWidth().padding(16.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
                 enabled = !isLoading
             ) {
                 if (isLoading) {
-                    CircularProgressIndicator(modifier = Modifier.size(24.dp), color = MaterialTheme.colorScheme.onPrimary)
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(24.dp),
+                        color = MaterialTheme.colorScheme.onPrimary
+                    )
                 } else {
-                    Text(if (isSignUpProcess) "Done" else "Edit Complete")
+                    Text("Edit Complete")
                 }
             }
         }
@@ -1465,11 +1423,18 @@ fun StyleAndSensitivityScreen(
                 Text(
                     text = error!!,
                     color = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 16.dp),
                     textAlign = TextAlign.Center
                 )
             }
-            Text("Choose your style preference", style = MaterialTheme.typography.headlineSmall, modifier = Modifier.padding(vertical = 16.dp))
+
+            Text(
+                "Choose your style preference",
+                style = MaterialTheme.typography.headlineSmall,
+                modifier = Modifier.padding(vertical = 16.dp)
+            )
             FlowRow(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceEvenly,
@@ -1478,13 +1443,24 @@ fun StyleAndSensitivityScreen(
             ) {
                 styles.forEach { style ->
                     StyleSelectionItem(style, selectedStyles.contains(style)) {
-                        if (selectedStyles.contains(style)) selectedStyles.remove(style) else selectedStyles.add(style)
+                        if (selectedStyles.contains(style)) {
+                            selectedStyles.remove(style)
+                        } else {
+                            selectedStyles.add(style)
+                        }
                     }
                 }
             }
+
             Spacer(Modifier.height(24.dp))
-            Text("Your sensitivity tendency", style = MaterialTheme.typography.headlineSmall, textAlign = TextAlign.Center)
+
+            Text(
+                "Your sensitivity tendency",
+                style = MaterialTheme.typography.headlineSmall,
+                textAlign = TextAlign.Center
+            )
             Spacer(Modifier.height(16.dp))
+
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -1495,6 +1471,7 @@ fun StyleAndSensitivityScreen(
                 Text("Sensitive to Heat", fontSize = 18.sp)
                 Switch(checked = heatSensitive, onCheckedChange = { heatSensitive = it })
             }
+
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -1729,11 +1706,7 @@ fun StyleAndSensitivityScreenPreview() {
     ClosetCastTheme {
         StyleAndSensitivityScreen(
             navController = rememberNavController(),
-            authViewModel = viewModel(),
-            isSignUpProcess = true,
-            signUpName = "preview",
-            signUpLoginId = "preview",
-            signUpPassword = "preview"
+            authViewModel = viewModel()
         )
     }
 }

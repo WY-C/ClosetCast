@@ -130,25 +130,28 @@ class AuthViewModel : ViewModel() {
                 // API 호출 및 결과 받아오기
                 val response = RetrofitClient.authApiService.signUp(signUpRequest)
 
-                if (response.isSuccess) {
-                    val result = response.result
-                    withContext(Dispatchers.Main) {
+                withContext(Dispatchers.Main) {
+                    if (response.isSuccess) {
+                        val result = response.result
                         _userInfo.value = result.name
                         _isLoading.value = false
-                        _signUpSuccess.value = true      // ✅ 회원가입 성공 신호
-                    }
-                } else {
-                    withContext(Dispatchers.Main) {
-                        _error.value = response.message
+                        _signUpSuccess.value = true
+                    } else {
+                        // ✅ code가 String이므로 "403" 문자열로 체크
+                        _error.value = when (response.code) {
+                            "403" -> "The member already exists."
+                            "400" -> "Invalid input data."
+                            else -> response.message
+                        }
                         _isLoading.value = false
                         _signUpSuccess.value = false
                     }
                 }
-
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
-                    _error.value = e.localizedMessage
+                    _error.value = "The Id already exists."
                     _isLoading.value = false
+                    _signUpSuccess.value = false
                 }
             }
         }
