@@ -45,6 +45,9 @@ class AuthViewModel : ViewModel() {
     private val _passwordChangeSuccess = MutableStateFlow(false)
     val passwordChangeSuccess: StateFlow<Boolean> = _passwordChangeSuccess
 
+    private val _updateSuccess = MutableStateFlow(false)
+    val updateSuccess: StateFlow<Boolean> = _updateSuccess
+
     fun login(loginId: String, password: String) {
         viewModelScope.launch {
             _isLoading.value = true
@@ -220,6 +223,8 @@ class AuthViewModel : ViewModel() {
                         // 필요하면 userInfo 등 다른 상태도 갱신
                         _userInfo.value = memberId.toString()
                         _isLoading.value = false
+                        _updateSuccess.value = true
+
                     } else {
                         // ✅ HTTP 코드에 따라 메시지 가공 (예시는 403이 “현재 비밀번호 오류”인 경우)
                         _error.value = if (response.code == "403") {
@@ -229,6 +234,7 @@ class AuthViewModel : ViewModel() {
                         }
                         _isLoading.value = false
                         _passwordChangeSuccess.value = false
+                        _updateSuccess.value = false
                     }
                 }
             } catch (e: Exception) {

@@ -1359,8 +1359,9 @@ fun StyleAndSensitivityScreen(
         )
     }
     val signUpSuccess by authViewModel.signUpSuccess.collectAsState()
+    val updateSuccess by authViewModel.updateSuccess.collectAsState()
 
-    LaunchedEffect(signUpSuccess) {
+    LaunchedEffect(signUpSuccess,updateSuccess) {
         if (isSignUpProcess && signUpSuccess) {
             navController.navigate("login") {
                 popUpTo("login") { inclusive = true }
@@ -1368,6 +1369,16 @@ fun StyleAndSensitivityScreen(
             Toast.makeText(
                 context,
                 "Sign up completed. Please log in.",
+                Toast.LENGTH_SHORT
+            ).show()
+        }
+        else if (!isSignUpProcess && updateSuccess) { // 메인화면에서 유저 정보 업데이트 성공
+            navController.navigate("main") {
+                popUpTo("main") { inclusive = true }
+            }
+            Toast.makeText(
+                context,
+                "Update your personal Information completed.",
                 Toast.LENGTH_SHORT
             ).show()
         }
@@ -1421,8 +1432,7 @@ fun StyleAndSensitivityScreen(
                             ).show()
                             return@Button
                         }
-
-                            authViewModel.updateMember(
+                        authViewModel.updateMember(
                             memberId = memberId!!,
                             password = null,
                             newPassword = null,
@@ -1430,10 +1440,6 @@ fun StyleAndSensitivityScreen(
                             tendencies = tendencies,
                             clothes = null
                         )
-
-                        navController.navigate("main") {
-                            popUpTo("main") { inclusive = true }
-                        }
                     }
                 },
                 modifier = Modifier.fillMaxWidth().padding(16.dp),
