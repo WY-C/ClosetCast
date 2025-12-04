@@ -48,7 +48,7 @@ public class MemberService {
         memberRepository.save(member);
 
         return SignUpResponseDto.of(
-                member.getName(), member.getLoginId(), member.getPassword(), member.getPreferences(), member.getTendencies()
+                member.getName(), member.getLoginId(), member.getPassword(), member.getPreferences(), member.getTendencies(), member.getId()
         );
     }
 

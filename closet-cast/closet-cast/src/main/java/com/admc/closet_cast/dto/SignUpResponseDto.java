@@ -10,9 +10,10 @@ public record SignUpResponseDto(
         String loginId,
         String encodedPassword,
         List<Preference> preference,
-        List<Tendency> tendencies
+        List<Tendency> tendencies,
+        Long memberId
 ) {
-    public static SignUpResponseDto of(String name, String loginId, String encodedPassword, List<Preference> preference, List<Tendency> tendencies) {
-        return new SignUpResponseDto(name, loginId, encodedPassword, preference, tendencies);
+    public static SignUpResponseDto of(String name, String loginId, String encodedPassword, List<Preference> preference, List<Tendency> tendencies, Long memberId) {
+        return new SignUpResponseDto(name, loginId, encodedPassword, preference, tendencies, memberId);
     }
 }
