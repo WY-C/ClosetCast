@@ -319,6 +319,7 @@ fun SignUpScreen(navController: NavController, authViewModel: AuthViewModel = vi
 
     LaunchedEffect(signUpSuccess) {
         if (signUpSuccess) {
+            Toast.makeText(context, "SignUp Success. Please Set your style preference and Sensitivity.", Toast.LENGTH_SHORT).show()
             // ✅ 회원가입 성공 → 스타일/민감도 설정 화면으로
             navController.navigate("styleandsensitivity") {
                 popUpTo("signup") { inclusive = true }
@@ -535,7 +536,7 @@ fun MainScreen(navController: NavController, authViewModel: AuthViewModel = view
     val drawerItems = listOf(
         "Edit Password" to "changepassword",
         "Edit My Closet" to "clothessetting",
-        "Edit Personal Information" to "styleandsensitivity?isSignUpProcess=false"
+        "Edit Personal Information" to "styleandsensitivity"
     )
 
     Box(
@@ -1037,7 +1038,7 @@ fun ClothingRecommendationScreen(
                 weatherViewModel.getRecommend(memberId!!) { newRecommendation ->
                     recommendation = newRecommendation
                     isLoading = false
-                    Toast.makeText(context, "추천 업데이트 완료", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, "Recommended clothing updated By AI!", Toast.LENGTH_SHORT).show()
                 }
             } else {
                 Log.d("ClothingRecommendationScreen", "memberId가 null입니다!")
@@ -1337,6 +1338,11 @@ fun StyleAndSensitivityScreen(
     }
     var coldSensitive by rememberSaveable(memberProfile) {
         mutableStateOf("COLD" in savedTendencies)
+    }
+
+    DisposableEffect(Unit) {
+        authViewModel.resetUpdateSuccess()
+        onDispose { }
     }
 
     // ✅ 수정 성공 시에만 메인으로 이동

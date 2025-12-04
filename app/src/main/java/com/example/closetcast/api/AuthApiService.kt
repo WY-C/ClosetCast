@@ -77,7 +77,10 @@ data class SignUpResponseDto(
     val preference: List<String>,
 
     @SerializedName("tendencies")
-    val tendencies: List<String>
+    val tendencies: List<String>,
+
+    @SerializedName("memberId")
+    val memberId: Long
 )
 
 data class ApiResponseSignUpResponseDto(

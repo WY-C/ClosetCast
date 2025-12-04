@@ -133,9 +133,14 @@ class AuthViewModel : ViewModel() {
                 withContext(Dispatchers.Main) {
                     if (response.isSuccess) {
                         val result = response.result
-                        _userInfo.value = result.name
-                        _isLoading.value = false
-                        _signUpSuccess.value = true
+                        withContext(Dispatchers.Main) {
+                            _userInfo.value = result.name
+                            _isLoggedIn.value = true  // 로그인 상태 true로 설정
+                            // ✅ 회원가입 성공 시 memberId도 저장
+                            _memberId.value = result.memberId
+                            _isLoading.value = false
+                            _signUpSuccess.value = true
+                        }
                     } else {
                         // ✅ code가 String이므로 "403" 문자열로 체크
                         _error.value = when (response.code) {
@@ -179,6 +184,16 @@ class AuthViewModel : ViewModel() {
     fun resetAuthState() {
         _isLoggedIn.value = false
         _error.value = null
+    }
+
+    fun resetUpdateSuccess() {
+        _updateSuccess.value = false
+    }
+
+    fun resetAllFlags() {
+        _updateSuccess.value = false
+        _signUpSuccess.value = false
+        // 다른 성공 플래그들도 필요시 리셋
     }
 
     // ===== 1. 유저 정보 업데이트 (필수) =====
