@@ -175,10 +175,11 @@ class AuthViewModel : ViewModel() {
     // ===== 1. 유저 정보 업데이트 (필수) =====
     fun updateMember(
         memberId: Long,
-        password: String?,
-        preference: List<String>,
-        tendencies: List<String>,
-        clothes: List<String>
+        password: String?,        // 현재 비밀번호 (없으면 null)
+        newPassword: String?,     // 새 비밀번호 (없으면 null)
+        preference: List<String>?,
+        tendencies: List<String>?,
+        clothes: List<String>?
     ) {
         viewModelScope.launch {
             _isLoading.value = true
@@ -187,6 +188,7 @@ class AuthViewModel : ViewModel() {
             try {
                 val request = MemberUpdateRequestDto(
                     password = password,
+                    newPassword = newPassword,
                     preference = preference,
                     tendencies = tendencies,
                     clothes = clothes
@@ -198,11 +200,27 @@ class AuthViewModel : ViewModel() {
 
                 withContext(Dispatchers.Main) {
                     if (response.isSuccess) {
-                        _userInfo.value = response.result.memberId.toString()
+                        // ✅ 로컬 memberProfile 을 요청 값으로 업데이트
+                        val current = _memberProfile.value
+
+                        _memberProfile.value = current.copy(
+                            // password 는 별도 화면에서만 바꾸니 여기선 그대로 두고,
+                            preference = preference ?: current.preference,
+                            tendencies = tendencies ?: current.tendencies,
+                            clothes    = clothes ?: current.clothes
+                        )
+
+
+                        // 필요하면 userInfo 등 다른 상태도 갱신
+                        _userInfo.value = memberId.toString()
                         _isLoading.value = false
-                        // 성공 토스트 메시지는 화면에서 처리
                     } else {
-                        _error.value = response.message
+                        // ✅ HTTP 코드에 따라 메시지 가공 (예시는 403이 “현재 비밀번호 오류”인 경우)
+                        _error.value = if (response.code == "403") {
+                            "현재 비밀번호가 올바르지 않습니다."
+                        } else {
+                            response.message ?: "비밀번호 변경에 실패했습니다."
+                        }
                         _isLoading.value = false
                     }
                 }

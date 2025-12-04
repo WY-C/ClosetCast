@@ -97,16 +97,19 @@ data class ApiResponseSignUpResponseDto(
 // ===== 유저 정보 업데이트 =====
 data class MemberUpdateRequestDto(
     @SerializedName("password")
-    val password: String?,
+    val password: String?,        // 현재 비밀번호 (비번 변경 시에만 사용)
+
+    @SerializedName("newPassword")
+    val newPassword: String?,     // 새 비밀번호 (비번 변경 시에만 사용)
 
     @SerializedName("preference")
-    val preference: List<String>,
+    val preference: List<String>?,
 
     @SerializedName("tendencies")
-    val tendencies: List<String>,
+    val tendencies: List<String>?,
 
     @SerializedName("clothes")
-    val clothes: List<String>
+    val clothes: List<String>?
 )
 
 data class MemberUpdateResponseDto(

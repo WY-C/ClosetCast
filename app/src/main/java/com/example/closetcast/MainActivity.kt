@@ -1162,10 +1162,11 @@ fun ChangePasswordScreen(
                             // ✅ 실제 서버 비밀번호 업데이트 호출
                             authViewModel.updateMember(
                                 memberId = memberId!!,
-                                password = newPassword,
-                                preference = memberProfile.preference,
-                                tendencies = memberProfile.tendencies,
-                                clothes = memberProfile.clothes
+                                password = oldPassword,
+                                newPassword = newPassword,
+                                preference = null,
+                                tendencies = null,
+                                clothes = null
                             )
                             navController.popBackStack()
                         }
@@ -1413,12 +1414,13 @@ fun StyleAndSensitivityScreen(
                             return@Button
                         }
 
-                        authViewModel.updateMember(
+                            authViewModel.updateMember(
                             memberId = memberId!!,
                             password = null,
+                            newPassword = null,
                             preference = preference,
                             tendencies = tendencies,
-                            clothes = memberProfile.clothes
+                            clothes = null
                         )
 
                         navController.navigate("main") {
@@ -1608,8 +1610,9 @@ fun ClothesSetting(
                     authViewModel.updateMember(
                         memberId = memberId!!,
                         password = null,                 // 비밀번호 변경 없음
-                        preference = memberProfile.preference,      // 스타일은 여기서 안 건드림
-                        tendencies = memberProfile.tendencies,      // 민감도도 안 건드림
+                        newPassword = null,
+                        preference = null,      // 스타일은 여기서 안 건드림
+                        tendencies = null,      // 민감도도 안 건드림
                         clothes = selectedClothes      // ✅ 옷 정보만 업데이트
                     )
 
