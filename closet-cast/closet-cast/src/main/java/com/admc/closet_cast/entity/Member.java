@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 @Entity
@@ -64,5 +65,6 @@ public class Member extends BaseEntity{
         this.preferences = preference;
         this.tendencies = tendencies;
         this.clothes = new ArrayList<>();
+        Collections.addAll(this.clothes, Cloth.values());
     }
 }

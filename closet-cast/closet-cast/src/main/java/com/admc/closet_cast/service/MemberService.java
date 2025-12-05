@@ -29,6 +29,28 @@ public class MemberService {
     private final PasswordEncoder passwordEncoder;
     private final JwtProvider jwtProvider;
 
+    private final List<Cloth> outer = List.of(
+            Cloth.PUFFER_JACKET,
+            Cloth.COAT,
+            Cloth.FLEECE,
+            Cloth.JACKET,
+            Cloth.WINDBREAKER
+    );
+
+    private final List<Cloth> top = List.of(
+            Cloth.SWEATER,
+            Cloth.HOODIE,
+            Cloth.SHIRT,
+            Cloth.LONG_SLEEVE,
+            Cloth.SHORT_SLEEVE
+    );
+
+    private final List<Cloth> bottom = List.of(
+            Cloth.JEANS,
+            Cloth.COTTON_PANTS,
+            Cloth.SHORTS
+    );
+
     @Transactional
     public SignUpResponseDto signUp(SignUpRequestDto signupDto) {
         if (memberRepository.existsByLoginId(signupDto.loginId())) {
@@ -111,6 +133,19 @@ public class MemberService {
             member.setTendencies(requestDto.tendencies());
         }
         if (requestDto.clothes() != null) {
+
+            if (requestDto.clothes().stream().noneMatch(outer::contains)) {
+                throw new MemberHandler(ErrorStatus.INVALID_CLOTHES);
+            }
+
+            if (requestDto.clothes().stream().noneMatch(top::contains)) {
+                throw new MemberHandler(ErrorStatus.INVALID_CLOTHES);
+            }
+
+            if (requestDto.clothes().stream().noneMatch(bottom::contains)) {
+                throw new MemberHandler(ErrorStatus.INVALID_CLOTHES);
+            }
+
             member.setClothes(requestDto.clothes());
         }
 
