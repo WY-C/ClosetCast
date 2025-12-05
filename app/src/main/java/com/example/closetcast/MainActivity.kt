@@ -971,32 +971,32 @@ fun getRecommendationForTemperature(temp: Double): ClothingRecommendation {
             topList = listOf("Short Sleeve")
             bottomList = listOf("Shorts")
         }
-        temp in 23.0..27.0 -> {
+        temp in 23.0..28.0 -> {
             outerList = listOf("None")
             topList = listOf("Short sleeve", "Long Sleeve")
             bottomList = listOf("Shorts", "Cotton pants")
         }
-        temp in 20.0..22.0 -> {
+        temp in 20.0..23.0 -> {
             outerList = listOf("WindBreaker")
             topList = listOf("Shirt", "Long sleeve", "Short Sleeve")
             bottomList = listOf("Jeans", "Cotton pants")
         }
-        temp in 17.0..19.0 -> {
+        temp in 17.0..20.0 -> {
             outerList = listOf("Jacket", "WindBreaker")
             topList = listOf("Shirt", "Hoodie", "Long Sleeve")
             bottomList = listOf("Jeans", "Cotton pants")
         }
-        temp in 12.0..16.0 -> {
+        temp in 12.0..17.0 -> {
             outerList = listOf("Jacket", "Windbreaker", "Coat")
             topList = listOf("Sweater", "Shirt", "Hoodie", "Long Sleeve")
             bottomList = listOf("Jeans", "Cotton pants")
         }
-        temp in 9.0..11.0 -> {
+        temp in 9.0..12.0 -> {
             outerList = listOf("Coat", "Fleece", "Jacket")
             topList = listOf("Sweater", "Hoodie", "Long Sleeve")
             bottomList = listOf("Jeans", "Cotton pants")
         }
-        temp in 5.0..8.0 -> {
+        temp in 4.0..9.0 -> {
             outerList = listOf("Coat", "Puffer Jacket", "Fleece")
             topList = listOf("Sweater", "Hoodie")
             bottomList = listOf("Jeans", "Cotton pants")
