@@ -97,7 +97,8 @@ public class RecommendService {
                         "이 옷 중에서 PUFFER_JACKET, FLEECE, JACKET, WIND_BREAKER는 아우터, SWEATER, HOODIE, SHIRT, LONG_SLEEVE, SHORT_SLEEVE는 상의, JEANS, COTTON_PANTS, SHORTS는 하의야."+
                         "반드시 이 목록 안에서만 (아우터, 상의, 하의) 조합을 추천해야 해. " +
                         "다른 설명, 인사, 날씨 브리핑 없이 오직 (아우터, 상의 아이템, 하의 아이템) 형식으로만 대답해야 해. " +
-                        "예시: (아우터, 맨투맨, 청바지)",
+                        "만약 아우터가 필요 없는 날씨라면, 아우터칸은 비어있어도 돼." +
+                        "예시: (아우터, 맨투맨, 청바지), 또는 ( , 맨투맨, 청바지)",
                 clothes
         );
 
