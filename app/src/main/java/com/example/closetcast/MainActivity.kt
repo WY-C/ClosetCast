@@ -19,6 +19,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -844,6 +845,7 @@ fun ApparentTemperatureCard(apparentTemperature: Double) {
 fun ClothingRecommendationCard(
     recommendation: ClothingRecommendation,
     isLoading: Boolean = false,
+    recommendationType: RecommendationType = RecommendationType.TEMPERATURE_BASED,  // ✨ 추가
     onRefreshClick: () -> Unit
 ) {
     Column(
@@ -852,78 +854,173 @@ fun ClothingRecommendationCard(
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        // ✨ IMPROVED: 추천 유형에 따라 다른 메시지 표시
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 16.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = when (recommendationType) {
+                    RecommendationType.TEMPERATURE_BASED ->
+                        MaterialTheme.colorScheme.secondaryContainer
+                    RecommendationType.AI_BASED ->
+                        MaterialTheme.colorScheme.primaryContainer
+                }
+            ),
+            shape = RoundedCornerShape(8.dp)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(12.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = when (recommendationType) {
+                        RecommendationType.TEMPERATURE_BASED -> "🌡️ Temperature Based"
+                        RecommendationType.AI_BASED -> "✨ AI Recommendation"
+                    },
+                    style = MaterialTheme.typography.labelLarge,
+                    color = when (recommendationType) {
+                        RecommendationType.TEMPERATURE_BASED ->
+                            MaterialTheme.colorScheme.onSecondaryContainer
+                        RecommendationType.AI_BASED ->
+                            MaterialTheme.colorScheme.primary
+                    },
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = when (recommendationType) {
+                        RecommendationType.TEMPERATURE_BASED ->
+                            "The clothes based on current temperature."
+                        RecommendationType.AI_BASED ->
+                            "Recommended based on current weather and your clothes."
+                    },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = when (recommendationType) {
+                        RecommendationType.TEMPERATURE_BASED ->
+                            MaterialTheme.colorScheme.onSecondaryContainer
+                        RecommendationType.AI_BASED ->
+                            MaterialTheme.colorScheme.onPrimaryContainer
+                    },
+                    textAlign = TextAlign.Center
+                )
+            }
+        }
+
+        // 기존 의류 추천 카드들 (이전 코드와 동일)
         Row(
             horizontalArrangement = Arrangement.SpaceEvenly,
             modifier = Modifier.fillMaxWidth()
         ) {
             // Outer Wear Card
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(text = "Outer", style = MaterialTheme.typography.titleMedium, color = Color.White)
+                Text(
+                    text = "Outer",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = Color.White
+                )
                 Box(
                     modifier = Modifier
                         .size(120.dp)
-                        .background(MaterialTheme.colorScheme.secondaryContainer, shape = CircleShape),
+                        .background(
+                            MaterialTheme.colorScheme.secondaryContainer,
+                            shape = CircleShape
+                        ),
                     contentAlignment = Alignment.Center
                 ) {
                     if (recommendation.outer.lowercase() != "none") {
                         Image(
-                            painter = painterResource(getImageResourceForClothingName(recommendation.outer)),
+                            painter = painterResource(
+                                getImageResourceForClothingName(recommendation.outer)
+                            ),
                             contentDescription = recommendation.outer,
                             modifier = Modifier.size(80.dp)
                         )
                     }
                 }
                 Spacer(modifier = Modifier.height(8.dp))
-                Text(text = recommendation.outer, style = MaterialTheme.typography.bodyLarge, color = Color.White)
+                Text(
+                    text = recommendation.outer,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = Color.White
+                )
             }
+
             // Top Wear Card
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(text = "Top", style = MaterialTheme.typography.titleMedium, color = Color.White)
+                Text(
+                    text = "Top",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = Color.White
+                )
                 Box(
                     modifier = Modifier
                         .size(120.dp)
-                        .background(MaterialTheme.colorScheme.secondaryContainer, shape = CircleShape),
+                        .background(
+                            MaterialTheme.colorScheme.secondaryContainer,
+                            shape = CircleShape
+                        ),
                     contentAlignment = Alignment.Center
                 ) {
                     if (recommendation.top.lowercase() != "none") {
                         Image(
-                            painter = painterResource(getImageResourceForClothingName(recommendation.top)),
+                            painter = painterResource(
+                                getImageResourceForClothingName(recommendation.top)
+                            ),
                             contentDescription = recommendation.top,
                             modifier = Modifier.size(80.dp)
                         )
                     }
                 }
                 Spacer(modifier = Modifier.height(8.dp))
-                Text(text = recommendation.top, style = MaterialTheme.typography.bodyLarge, color = Color.White)
+                Text(
+                    text = recommendation.top,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = Color.White
+                )
             }
 
-            // Bottom Wear Card (여기 추가)
+            // Bottom Wear Card
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(text = "Bottom", style = MaterialTheme.typography.titleMedium, color = Color.White)
+                Text(
+                    text = "Bottom",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = Color.White
+                )
                 Box(
                     modifier = Modifier
                         .size(120.dp)
-                        .background(MaterialTheme.colorScheme.secondaryContainer, shape = CircleShape),
+                        .background(
+                            MaterialTheme.colorScheme.secondaryContainer,
+                            shape = CircleShape
+                        ),
                     contentAlignment = Alignment.Center
                 ) {
                     if (recommendation.bottom.lowercase() != "none") {
                         Image(
-                            painter = painterResource(getImageResourceForClothingName(recommendation.bottom)),
+                            painter = painterResource(
+                                getImageResourceForClothingName(recommendation.bottom)
+                            ),
                             contentDescription = recommendation.bottom,
                             modifier = Modifier.size(80.dp)
                         )
                     }
                 }
                 Spacer(modifier = Modifier.height(8.dp))
-                Text(text = recommendation.bottom, style = MaterialTheme.typography.bodyLarge, color = Color.White)
+                Text(
+                    text = recommendation.bottom,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = Color.White
+                )
             }
         }
+
         Spacer(modifier = Modifier.height(24.dp))
+
         OutlinedButton(
-            onClick = {
-                Log.d("ClothingCard", "버튼 클릭됨!")
-                onRefreshClick()
-            },
+            onClick = { onRefreshClick() },
             enabled = !isLoading,
             border = BorderStroke(2.dp, Color.White)
         ) {
@@ -1015,6 +1112,11 @@ fun getRecommendationForTemperature(temp: Double): ClothingRecommendation {
     return ClothingRecommendation(outer, top, bottom)
 }
 
+enum class RecommendationType {
+    TEMPERATURE_BASED,  // 기온 기반 (하드코딩)
+    AI_BASED           // AI 기반 (API)
+}
+
 @Composable
 fun ClothingRecommendationScreen(
     weatherData: WeatherData,
@@ -1026,22 +1128,30 @@ fun ClothingRecommendationScreen(
     var recommendation by remember {
         mutableStateOf(getRecommendationForTemperature(weatherData.current.temperature))
     }
+
+    // ✨ NEW: 추천 유형 상태 추가
+    var recommendationType by remember {
+        mutableStateOf(RecommendationType.TEMPERATURE_BASED)
+    }
+
     val memberId by authViewModel.memberId
 
     ClothingRecommendationCard(
         recommendation = recommendation,
         isLoading = isLoading,
+        recommendationType = recommendationType,  // ✨ 전달
         onRefreshClick = {
             Log.d("ClothingRecommendationScreen", "memberId: $memberId")
             if (memberId != null) {
                 isLoading = true
+
                 weatherViewModel.getRecommend(memberId!!) { newRecommendation ->
                     recommendation = newRecommendation
                     isLoading = false
-                    Toast.makeText(context, "Recommended clothing updated By AI!", Toast.LENGTH_SHORT).show()
+                    recommendationType = RecommendationType.AI_BASED  // ✨ AI 유형으로 설정
                 }
             } else {
-                Log.d("ClothingRecommendationScreen", "memberId가 null입니다!")
+                Log.d("ClothingRecommendationScreen", "memberId is null!")
             }
         }
     )
