@@ -190,10 +190,8 @@ class AuthViewModel : ViewModel() {
         _updateSuccess.value = false
     }
 
-    fun resetAllFlags() {
-        _updateSuccess.value = false
-        _signUpSuccess.value = false
-        // 다른 성공 플래그들도 필요시 리셋
+    fun resetError() {
+        _error.value = null
     }
 
     // ===== 1. 유저 정보 업데이트 (필수) =====
@@ -245,10 +243,10 @@ class AuthViewModel : ViewModel() {
 
                     } else {
                         // ✅ HTTP 코드에 따라 메시지 가공 (예시는 403이 “현재 비밀번호 오류”인 경우)
-                        _error.value = if (response.code == "403") {
-                            "Current Password is not correct."
-                        } else {
-                            response.message ?: "Fail to change the Password."
+                        _error.value = when (response.code) {
+                            "403" -> "Request is not appropriate."  // 일반적 메시지
+                            "400" -> "Request is not appropriate."
+                            else -> response.message ?: "Failed to update info."
                         }
                         _isLoading.value = false
                         _passwordChangeSuccess.value = false

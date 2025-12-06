@@ -895,7 +895,7 @@ fun ClothingRecommendationCard(
                         RecommendationType.TEMPERATURE_BASED ->
                             "The clothes based on current temperature."
                         RecommendationType.AI_BASED ->
-                            "Recommended based on current weather and your clothes."
+                            "Recommended based on current weather and your closet."
                     },
                     style = MaterialTheme.typography.bodySmall,
                     color = when (recommendationType) {
@@ -1175,6 +1175,10 @@ fun ChangePasswordScreen(
 
     val passwordChangeSuccess by authViewModel.passwordChangeSuccess.collectAsState()
 
+    // ✅ 화면 진입 시 에러 초기화
+    LaunchedEffect(Unit) {
+        authViewModel.resetError()
+    }
     LaunchedEffect(passwordChangeSuccess) {
         if (passwordChangeSuccess) {
             navController.popBackStack()
@@ -1207,7 +1211,7 @@ fun ChangePasswordScreen(
             // 에러 메시지
             if (error != null) {
                 Text(
-                    text = "Error: $error",
+                    text = error!!,
                     color = MaterialTheme.colorScheme.error,
                     modifier = Modifier
                         .fillMaxWidth()
@@ -1452,6 +1456,7 @@ fun StyleAndSensitivityScreen(
 
     DisposableEffect(Unit) {
         authViewModel.resetUpdateSuccess()
+        authViewModel.resetError()
         onDispose { }
     }
 
@@ -1673,6 +1678,10 @@ fun ClothesSetting(
         )
     }
 
+    // ✅ 화면 진입 시 에러 초기화
+    LaunchedEffect(Unit) {
+        authViewModel.resetError()
+    }
     Scaffold(
         topBar = {
             TopAppBar(
@@ -1692,9 +1701,26 @@ fun ClothesSetting(
                         return@Button
                     }
 
-                    // ✅ 현재 선택된 옷 이름들을 모두 수집
-                    val rawClothes = mutableListOf<String>()
+                    // ✅ 각 카테고리별 최소 1개 이상 선택 검증
+                    val selectedOuterwear = outerwear.count { it.value }
+                    val selectedTops = tops.count { it.value }
+                    val selectedBottoms = bottoms.count { it.value }
 
+                    if (selectedOuterwear == 0) {
+                        Toast.makeText(context, "아우터를 최소 1개 이상 선택해주세요.", Toast.LENGTH_SHORT).show()
+                        return@Button
+                    }
+                    if (selectedTops == 0) {
+                        Toast.makeText(context, "상의를 최소 1개 이상 선택해주세요.", Toast.LENGTH_SHORT).show()
+                        return@Button
+                    }
+                    if (selectedBottoms == 0) {
+                        Toast.makeText(context, "하의를 최소 1개 이상 선택해주세요.", Toast.LENGTH_SHORT).show()
+                        return@Button
+                    }
+
+                    // 모두 통과하면 서버 호출
+                    val rawClothes = mutableListOf<String>()
                     outerwear.forEach { (name, hasItem) ->
                         if (hasItem) rawClothes.add(name)
                     }
@@ -1705,24 +1731,20 @@ fun ClothesSetting(
                         if (hasItem) rawClothes.add(name)
                     }
 
-                    // 2) 서버 요구 포맷으로 변환: 대문자 + 공백→언더스코어
                     val selectedClothes = rawClothes.map { name ->
-                        name.trim()              // 앞뒤 공백 제거
-                            .replace(' ', '_')   // 공백을 언더스코어로
-                            .uppercase()         // 전부 대문자
+                        name.trim()
+                            .replace(' ', '_')
+                            .uppercase()
                     }
 
-
-                    // 비어 있어도 서버에 빈 리스트로 보내도록 할지, 막을지는 선택
                     authViewModel.updateMember(
                         memberId = memberId!!,
-                        password = null,                 // 비밀번호 변경 없음
+                        password = null,
                         newPassword = null,
-                        preference = null,      // 스타일은 여기서 안 건드림
-                        tendencies = null,      // 민감도도 안 건드림
-                        clothes = selectedClothes      // ✅ 옷 정보만 업데이트
+                        preference = null,
+                        tendencies = null,
+                        clothes = selectedClothes
                     )
-
                     Toast.makeText(context, "Edit completed.", Toast.LENGTH_SHORT).show()
                     navController.popBackStack()
                 },
@@ -1753,7 +1775,11 @@ fun ClothesSetting(
         ) {
             if (error != null) {
                 Text(
-                    text = error!!,
+                    text = when {
+                        error?.contains("Your current Password does not match") == true ->
+                            "Please select at least one item in each category."
+                        else -> error!!
+                        },
                     color = MaterialTheme.colorScheme.error,
                     modifier = Modifier
                         .fillMaxWidth()
