@@ -29,11 +29,8 @@ class WeatherViewModel : ViewModel() {
     val error: State<String?> = _error
 
     private val _currentLocation = mutableStateOf<Pair<Double, Double>?>(null)
-    val currentLocation: State<Pair<Double, Double>?> = _currentLocation
 
     private val _recommendation = mutableStateOf(ClothingRecommendation("None", "None", "None"))
-    val recommendation: State<ClothingRecommendation> = _recommendation
-
     fun fetchWeather(latitude: Double, longitude: Double) {
         _currentLocation.value = Pair(latitude, longitude)
         viewModelScope.launch {
@@ -262,18 +259,6 @@ class WeatherViewModel : ViewModel() {
             maxTemp >= 25 -> Icons.Default.WbSunny
             maxTemp >= 15 -> Icons.Default.Cloud
             else -> Icons.Default.AcUnit
-        }
-    }
-
-    private fun readWeatherIcon(description: String): ImageVector {
-        return when {
-            description.contains("sunny", ignoreCase = true) ||
-                    description.contains("clear", ignoreCase = true) -> Icons.Default.WbSunny
-            description.contains("cloudy", ignoreCase = true) ||
-                    description.contains("cloud", ignoreCase = true) -> Icons.Default.Cloud
-            description.contains("rain", ignoreCase = true) -> Icons.Default.Grain
-            description.contains("snow", ignoreCase = true) -> Icons.Default.AcUnit
-            else -> Icons.Default.WbSunny
         }
     }
 

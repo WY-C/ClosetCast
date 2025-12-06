@@ -1,10 +1,7 @@
 package com.example.closetcast
 
 import android.Manifest
-import android.content.Context
 import android.content.pm.PackageManager
-import android.location.LocationManager
-import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
@@ -40,7 +37,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.runtime.mutableStateOf
@@ -52,12 +48,10 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
-import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import androidx.navigation.navArgument
 import com.example.closetcast.ui.theme.ClosetCastTheme
 import kotlinx.coroutines.launch
 import kotlin.random.Random
@@ -71,15 +65,15 @@ class MainActivity : ComponentActivity() {
         val fineLocationGranted = permissions[Manifest.permission.ACCESS_FINE_LOCATION] ?: false
         val coarseLocationGranted = permissions[Manifest.permission.ACCESS_COARSE_LOCATION] ?: false
 
-        Log.d("MainActivity", "========== 권한 요청 결과 ==========")
+        Log.d("MainActivity", "========== Auth request result. ==========")
         Log.d("MainActivity", "FINE_LOCATION: $fineLocationGranted")
         Log.d("MainActivity", "COARSE_LOCATION: $coarseLocationGranted")
 
         if (fineLocationGranted || coarseLocationGranted) {
-            Log.d("MainActivity", "위치 권한 허용됨")
+            Log.d("MainActivity", "Location permission approved.")
             // 권한 허용 시 처리 로직
         } else {
-            Log.d("MainActivity", "위치 권한 거부됨")
+            Log.d("MainActivity", "Location permission denied.")
             // 권한 거부 시 처리 로직 (사용자 안내 등)
         }
     }
@@ -102,7 +96,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun requestLocationPermissions() {
-        Log.d("MainActivity", "위치 권한 요청 시작")
+        Log.d("MainActivity", "Start to request location permissions")
 
         val permissions = arrayOf(
             Manifest.permission.ACCESS_FINE_LOCATION,
@@ -119,14 +113,14 @@ class MainActivity : ComponentActivity() {
             this, Manifest.permission.ACCESS_COARSE_LOCATION
         ) == PackageManager.PERMISSION_GRANTED
 
-        Log.d("MainActivity", "현재 권한 상태 - FINE: $hasFineLocation, COARSE: $hasCoarseLocation")
+        Log.d("MainActivity", "Current Auth - FINE: $hasFineLocation, COARSE: $hasCoarseLocation")
 
         // 권한이 없으면 요청
         if (!hasFineLocation || !hasCoarseLocation) {
-            Log.d("MainActivity", "권한 요청 팝업 표시")
+            Log.d("MainActivity", "Authorization Required")
             requestPermissionLauncher.launch(permissions)
         } else {
-            Log.d("MainActivity", "이미 권한이 있음")
+            Log.d("MainActivity", "Already Authorized.")
         }
     }
 }
@@ -425,7 +419,7 @@ fun SignUpScreen(navController: NavController, authViewModel: AuthViewModel = vi
                     } else {
                         Toast.makeText(
                             context,
-                            "입력 정보를 확인해주세요. 비밀번호는 6자 이상이어야 합니다.",
+                            "Password must be at least 6 characters and match.",
                             Toast.LENGTH_SHORT
                         ).show()
                     }
@@ -522,15 +516,15 @@ fun MainScreen(navController: NavController, authViewModel: AuthViewModel = view
 
     // 앱 시작 시 위치 정보 요청
     LaunchedEffect(Unit) {
-        Log.d("MainScreen", "LaunchedEffect 시작")
+        Log.d("MainScreen", "LaunchedEffect started")
         try {
             val helper = LocationHelper(context)
             helper.requestCurrentLocation { lat, lng ->
-                Log.d("MainScreen", "위치 정보 받음: lat=$lat, lng=$lng")
+                Log.d("MainScreen", "Location updated: lat=$lat, lng=$lng")
                 weatherViewModel.fetchWeather(lat, lng)
             }
         } catch (e: Exception) {
-            Log.e("MainScreen", "위치 정보 요청 실패", e)
+            Log.e("MainScreen", "Failed to get location", e)
         }
     }
 
@@ -681,7 +675,7 @@ fun MainScreen(navController: NavController, authViewModel: AuthViewModel = view
                         )
                     } else {
                         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            Text("날씨 정보를 불러오는 중...")
+                            Text("Updating the Weather info...")
                         }
                     }
                 }
@@ -1123,7 +1117,6 @@ fun ClothingRecommendationScreen(
     authViewModel: AuthViewModel,
     weatherViewModel: WeatherViewModel
 ) {
-    val context = LocalContext.current
     var isLoading by remember { mutableStateOf(false) }
     var recommendation by remember {
         mutableStateOf(getRecommendationForTemperature(weatherData.current.temperature))
@@ -1171,8 +1164,6 @@ fun ChangePasswordScreen(
     val isLoading by authViewModel.isLoading
     val error by authViewModel.error
     val memberId by authViewModel.memberId
-    val memberProfile by authViewModel.memberProfile
-
     val passwordChangeSuccess by authViewModel.passwordChangeSuccess.collectAsState()
 
     // ✅ 화면 진입 시 에러 초기화
@@ -1697,7 +1688,7 @@ fun ClothesSetting(
             Button(
                 onClick = {
                     if (memberId == null) {
-                        Toast.makeText(context, "로그인 정보를 불러올 수 없습니다.", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, "Cannot fetch the login info.", Toast.LENGTH_SHORT).show()
                         return@Button
                     }
 
@@ -1707,15 +1698,15 @@ fun ClothesSetting(
                     val selectedBottoms = bottoms.count { it.value }
 
                     if (selectedOuterwear == 0) {
-                        Toast.makeText(context, "아우터를 최소 1개 이상 선택해주세요.", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, "Please select outer at least 1.", Toast.LENGTH_SHORT).show()
                         return@Button
                     }
                     if (selectedTops == 0) {
-                        Toast.makeText(context, "상의를 최소 1개 이상 선택해주세요.", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, "Please select top at least 1.", Toast.LENGTH_SHORT).show()
                         return@Button
                     }
                     if (selectedBottoms == 0) {
-                        Toast.makeText(context, "하의를 최소 1개 이상 선택해주세요.", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, "Please select bottom at least 1.", Toast.LENGTH_SHORT).show()
                         return@Button
                     }
 
@@ -1833,57 +1824,3 @@ fun ClothesSetting(
         }
     }
 }
-
-@Preview(showBackground = true)
-@Composable
-fun SignUpScreenPreview() {
-    ClosetCastTheme {
-        SignUpScreen(navController = rememberNavController())
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun StyleAndSensitivityScreenPreview() {
-    ClosetCastTheme {
-        StyleAndSensitivityScreen(
-            navController = rememberNavController(),
-            authViewModel = viewModel()
-        )
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun MainScreenPreview() {
-    ClosetCastTheme {
-        MainScreen(navController = rememberNavController())
-    }
-}
-
-
-@Preview(showBackground = true)
-@Composable
-fun WeatherScreenPreview() {
-    // #TODO : 왜 Preview에서도 샘플 데이터가 쓰이는진 모르겠지만 여기도 수정 필요
-    val sampleWeatherData = WeatherData(
-        current = CurrentWeather("Dongjak-gu, Sangdo 1-dong", 12.0, 10.0,"Clear", 11.0, 17.0),
-        hourly = listOf(
-            HourlyForecast("2 PM", 12.0, Icons.Default.WbSunny),
-            HourlyForecast("3 PM", 12.0, Icons.Default.WbSunny),
-            HourlyForecast("4 PM", 11.0, Icons.Default.WbSunny),
-            HourlyForecast("5 PM", 11.0, Icons.Default.WbSunny),
-            HourlyForecast("6 PM", 11.0, Icons.Default.WbSunny),
-            HourlyForecast("7 PM", 11.0, Icons.Default.WbSunny)
-        ),
-        daily = listOf(
-            DailyForecast("Today", 11.0, 17.0, Icons.Default.WbSunny),
-            DailyForecast("Tomorrow", 10.0, 18.0, Icons.Default.WbSunny),
-            DailyForecast("Day After Tomorrow", 9.0, 16.0, Icons.Default.WbSunny)
-        )
-    )
-    ClosetCastTheme {
-        WeatherScreen(sampleWeatherData)
-    }
-}
-

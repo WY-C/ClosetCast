@@ -216,9 +216,6 @@ interface AuthApiService {
     @GET("/api/member/read/{memberId}")
     suspend fun readMember(@Path("memberId") memberId: Long): ApiResponseMemberDto
 
-    @GET("/api/member/read")
-    suspend fun readListMember(): ApiResponseListMemberDto
-
     @DELETE("/api/member/delete/{memberId}")
     suspend fun deleteMember(@Path("memberId") memberId: Long): ApiResponseMemberDto
 }

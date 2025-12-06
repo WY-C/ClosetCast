@@ -61,8 +61,6 @@ data class ApiResponseRecommendDto(
 interface WeatherApiService {
     @GET("/api/weather/read")
     suspend fun readWeather(): List<DailyWeatherDto>
-    @GET("/api/weather/get")
-    suspend fun getWeather(): List<DailyWeatherDto>
 
     @GET("/api/recommend/{memberId}")
     suspend fun getRecommend(@Path("memberId") memberId: Long): ApiResponseRecommendDto

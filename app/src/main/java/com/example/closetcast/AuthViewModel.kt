@@ -12,13 +12,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-
-data class TempSignUpInfo(
-    val name: String = "",
-    val loginId: String = "",
-    val password: String = ""
-)
-
 // UI와 완전히 분리된 영역에서 로그인, 회원가입, 로그아웃 등 인증 관련 비즈니스 로직과 상태 관리
 class AuthViewModel : ViewModel() {
     private val _isLoading = mutableStateOf(false)
@@ -31,7 +24,6 @@ class AuthViewModel : ViewModel() {
     val isLoggedIn: State<Boolean> = _isLoggedIn
 
     private val _userInfo = mutableStateOf<String?>(null)
-    val userInfo: State<String?> = _userInfo
 
     private val _memberId = mutableStateOf<Long?>(null)
     val memberId: State<Long?> = _memberId
@@ -153,11 +145,7 @@ class AuthViewModel : ViewModel() {
                     }
                 }
             } catch (e: Exception) {
-                withContext(Dispatchers.Main) {
-                    _error.value = "The Id already exists."
-                    _isLoading.value = false
-                    _signUpSuccess.value = false
-                }
+
             }
         }
     }
@@ -246,7 +234,7 @@ class AuthViewModel : ViewModel() {
                         _error.value = when (response.code) {
                             "403" -> "Request is not appropriate."  // 일반적 메시지
                             "400" -> "Request is not appropriate."
-                            else -> response.message ?: "Failed to update info."
+                            else -> response.message
                         }
                         _isLoading.value = false
                         _passwordChangeSuccess.value = false
@@ -289,39 +277,6 @@ class AuthViewModel : ViewModel() {
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
                     _error.value = e.message
-                    _isLoading.value = false
-                }
-            }
-        }
-    }
-
-
-    // ===== 3. 모든 사용자 조회 (관리자용) =====
-    private val _memberList = mutableStateOf<List<MemberDto>>(emptyList())
-    val memberList: State<List<MemberDto>> = _memberList
-
-    fun readListMember() {
-        viewModelScope.launch {
-            _isLoading.value = true
-            _error.value = null
-
-            try {
-                val response = withContext(Dispatchers.IO) {
-                    RetrofitClient.authApiService.readListMember()
-                }
-
-                withContext(Dispatchers.Main) {
-                    if (response.isSuccess) {
-                        _memberList.value = response.result
-                        _isLoading.value = false
-                    } else {
-                        _error.value = response.message
-                        _isLoading.value = false
-                    }
-                }
-            } catch (e: Exception) {
-                withContext(Dispatchers.Main) {
-                    _error.value = "Error reading member list: ${e.localizedMessage}"
                     _isLoading.value = false
                 }
             }
