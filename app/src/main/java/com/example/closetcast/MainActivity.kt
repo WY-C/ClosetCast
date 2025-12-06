@@ -1692,15 +1692,10 @@ fun ClothesSetting(
                         return@Button
                     }
 
-                    // ✅ 각 카테고리별 최소 1개 이상 선택 검증
-                    val selectedOuterwear = outerwear.count { it.value }
+                    // ✅ 아우터 제외 각 카테고리별 최소 1개 이상 선택 검증
                     val selectedTops = tops.count { it.value }
                     val selectedBottoms = bottoms.count { it.value }
 
-                    if (selectedOuterwear == 0) {
-                        Toast.makeText(context, "Please select outer at least 1.", Toast.LENGTH_SHORT).show()
-                        return@Button
-                    }
                     if (selectedTops == 0) {
                         Toast.makeText(context, "Please select top at least 1.", Toast.LENGTH_SHORT).show()
                         return@Button
