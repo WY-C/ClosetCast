@@ -244,21 +244,31 @@ class WeatherViewModel : ViewModel() {
         }
     }
 
-    // 온도 기반 아이콘
+    // ✅ Hourly 예보용 - 더 다양한 아이콘
     private fun getWeatherIcon(temperature: Double): ImageVector {
         return when {
-            temperature >= 28 -> Icons.Default.WbSunny
-            temperature >= 20 -> Icons.Default.WbSunny
-            temperature >= 10 -> Icons.Default.Cloud
-            else -> Icons.Default.AcUnit
+            temperature >= 30 -> Icons.Default.Brightness7    // ☀️ 매우 더움
+            temperature >= 25 -> Icons.Default.WbSunny         // ☀️ 더움
+            temperature >= 20 -> Icons.Default.WbCloudy         // 🌤️ 따뜻함
+            temperature >= 15 -> Icons.Default.Cloud           // ☁️ 보통
+            temperature >= 10 -> Icons.Default.CloudQueue      // ☁️ 쌀쌀함
+            temperature >= 5 -> Icons.Default.WbCloudy        // 🌧️ 추움
+            temperature >= 0 -> Icons.Default.AcUnit           // ❄️ 매우 추움
+            else -> Icons.Default.AcUnit                       // ❄️ 극추움
         }
     }
 
+    // ✅ Daily 예보용 - 최고기온 기반
     private fun getWeatherIconForDay(maxTemp: Double): ImageVector {
         return when {
-            maxTemp >= 25 -> Icons.Default.WbSunny
-            maxTemp >= 15 -> Icons.Default.Cloud
-            else -> Icons.Default.AcUnit
+            maxTemp >= 30 -> Icons.Default.Brightness7         // ☀️ 매우 더운 날
+            maxTemp >= 25 -> Icons.Default.WbSunny             // ☀️ 더운 날
+            maxTemp >= 20 -> Icons.Default.WbCloudy            // 🌤️ 따뜻한 날
+            maxTemp >= 15 -> Icons.Default.Cloud               // ☁️ 보통 날씨
+            maxTemp >= 10 -> Icons.Default.CloudQueue          // ☁️ 쌀쌀한 날
+            maxTemp >= 5 -> Icons.Default.WbCloudy            // 🌧️ 추운 날
+            maxTemp >= 0 -> Icons.Default.AcUnit               // ❄️ 매우 추운 날
+            else -> Icons.Default.AcUnit                       // ❄️ 극저온
         }
     }
 
