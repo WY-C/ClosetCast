@@ -66,11 +66,4 @@ object RetrofitClient {
         currentToken = token
         Log.d("RetrofitClient", "토큰 설정됨: $token")
     }
-
-    fun getToken(): String? = currentToken
-
-    // 토큰 초기화 (로그아웃)
-    fun clearToken() {
-        currentToken = null
-    }
 }

@@ -53,6 +53,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.closetcast.ui.theme.ClosetCastTheme
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlin.random.Random
 
@@ -211,91 +212,121 @@ fun LoginScreen(navController: NavController, authViewModel: AuthViewModel) {
     }
 
     Scaffold { innerPadding ->
-        Column(
+        // 1) 파란 그라데이션 배경
+        val backgroundBrush = Brush.verticalGradient(
+            colors = listOf(
+                Color(0xFF7CB5FF),
+                Color(0xFF001ECB)
+            )
+        )
+
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding)
-                .padding(horizontal = 24.dp),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
+                .background(backgroundBrush)
+                .padding(innerPadding),
+            contentAlignment = Alignment.Center
         ) {
-            Text(text = "ClosetCast Login", fontSize = 28.sp)
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // LoginId 입력
-            OutlinedTextField(
-                value = loginId,
-                onValueChange = { loginId = it },
-                label = { Text("LoginId") },
-                modifier = Modifier.fillMaxWidth(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
-                singleLine = true,
-                enabled = !isLoading
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Password 입력
-            OutlinedTextField(
-                value = password,
-                onValueChange = { password = it },
-                label = { Text("Password") },
-                modifier = Modifier.fillMaxWidth(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                visualTransformation = PasswordVisualTransformation(),
-                singleLine = true,
-                enabled = !isLoading
-            )
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // ✅ 에러 메시지 표시
-            if (error != null) {
-                Text(
-                    text = error!!,
-                    color = MaterialTheme.colorScheme.error,
+            // 2) 흰 카드 안에 기존 Column 내용 그대로 이동
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth(0.85f)
+                    .padding(16.dp),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = Color.White
+                )
+            ) {
+                Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(bottom = 16.dp),
-                    textAlign = TextAlign.Center
-                )
-            }
-
-            // ✅ 로그인 버튼 - AuthViewModel.login() 호출
-            Button(
-                onClick = {
-                    if (loginId.isNotEmpty() && password.isNotEmpty()) {
-                        authViewModel.login(loginId, password)
-                    } else {
-                        Toast.makeText(
-                            context,
-                            "Please enter LoginId and Password",
-                            Toast.LENGTH_SHORT
-                        ).show()
-                    }
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(50.dp),
-                enabled = !isLoading && loginId.isNotEmpty() && password.isNotEmpty()
-            ) {
-                if (isLoading) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(24.dp),
-                        color = MaterialTheme.colorScheme.onPrimary
+                        .padding(horizontal = 24.dp, vertical = 24.dp),
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "ClosetCast Login",
+                        fontSize = 28.sp,
+                        fontWeight = FontWeight.Bold
                     )
-                } else {
-                    Text(text = "Login", fontSize = 18.sp)
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    OutlinedTextField(
+                        value = loginId,
+                        onValueChange = { loginId = it },
+                        label = { Text("LoginId") },
+                        modifier = Modifier.fillMaxWidth(),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
+                        singleLine = true,
+                        enabled = !isLoading
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    OutlinedTextField(
+                        value = password,
+                        onValueChange = { password = it },
+                        label = { Text("Password") },
+                        modifier = Modifier.fillMaxWidth(),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                        visualTransformation = PasswordVisualTransformation(),
+                        singleLine = true,
+                        enabled = !isLoading
+                    )
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    if (error != null) {
+                        Text(
+                            text = error!!,
+                            color = MaterialTheme.colorScheme.error,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(bottom = 16.dp),
+                            textAlign = TextAlign.Center
+                        )
+                    }
+
+                    Button(
+                        onClick = {
+                            if (loginId.isNotEmpty() && password.isNotEmpty()) {
+                                authViewModel.login(loginId, password)
+                            } else {
+                                Toast.makeText(
+                                    context,
+                                    "Please enter LoginId and Password",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(50.dp),
+                        enabled = !isLoading && loginId.isNotEmpty() && password.isNotEmpty(),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFF5B7FFF) // 파란 버튼
+                        )
+                    ) {
+                        if (isLoading) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(24.dp),
+                                color = Color.White
+                            )
+                        } else {
+                            Text(text = "Login", fontSize = 18.sp, color = Color.White)
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    TextButton(onClick = { navController.navigate("signup") }) {
+                        Text("Sign Up", color = Color(0xFF5B7FFF))
+                    }
                 }
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            TextButton(onClick = { navController.navigate("signup") }) {
-                Text("Sign Up")
             }
         }
     }
+
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -322,131 +353,172 @@ fun SignUpScreen(navController: NavController, authViewModel: AuthViewModel = vi
         }
     }
 
-
     Scaffold { innerPadding ->
-        Column(
+        // ✅ 파란 그라데이션 배경
+        val backgroundBrush = Brush.verticalGradient(
+            colors = listOf(
+                Color(0xFF7CB5FF),
+                Color(0xFF001ECB)
+            )
+        )
+
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding)
-                .padding(horizontal = 24.dp),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
+                .background(backgroundBrush)
+                .padding(innerPadding),
+            contentAlignment = Alignment.Center
         ) {
-            Text(text = "ClosetCast Sign Up", fontSize = 28.sp)
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // Name 입력
-            OutlinedTextField(
-                value = name,
-                onValueChange = { name = it },
-                label = { Text("Name") },
-                modifier = Modifier.fillMaxWidth(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
-                singleLine = true,
-                enabled = !isLoading
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // LoginId 입력
-            OutlinedTextField(
-                value = loginId,
-                onValueChange = { loginId = it },
-                label = { Text("LoginId") },
-                modifier = Modifier.fillMaxWidth(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-                singleLine = true,
-                enabled = !isLoading
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Password 입력
-            OutlinedTextField(
-                value = password,
-                onValueChange = { password = it },
-                label = { Text("Password") },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                visualTransformation = PasswordVisualTransformation(),
-                enabled = !isLoading
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Password Check 입력
-            OutlinedTextField(
-                value = passwordCheck,
-                onValueChange = { passwordCheck = it },
-                label = { Text("Password Check") },
-                modifier = Modifier.fillMaxWidth(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                singleLine = true,
-                visualTransformation = PasswordVisualTransformation(),
-                enabled = !isLoading
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // ✅ 에러 메시지 표시
-            if (error != null) {
-                Text(
-                    text = error!!,
-                    color = MaterialTheme.colorScheme.error,
+            // ✅ 흰색 Card 안에 모든 내용 감싸기
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth(0.85f)
+                    .padding(16.dp),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = Color.White
+                )
+            ) {
+                Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(bottom = 16.dp),
-                    textAlign = TextAlign.Center
-                )
-            }
-
-            // ✅ 회원가입 버튼 - AuthViewModel.signUp() 호출
-            Button(
-                onClick = {
-                    if (name.isNotBlank() &&
-                        loginId.isNotBlank() &&
-                        password.length >= 6 &&
-                        password == passwordCheck
-                    ) {
-                        authViewModel.signUp(
-                            name = name,
-                            loginId = loginId,
-                            password = password,
-                            preference = emptyList(),   // ✅ 일단 빈 값으로 보내기
-                            tendencies = emptyList()
-                        )
-                    } else {
-                        Toast.makeText(
-                            context,
-                            "Password must be at least 6 characters and match.",
-                            Toast.LENGTH_SHORT
-                        ).show()
-                    }
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(50.dp),
-                enabled = !isLoading &&
-                        name.isNotBlank() &&
-                        loginId.isNotBlank() &&
-                        password.isNotEmpty() &&
-                        passwordCheck.isNotEmpty()
-            ) {
-                if (isLoading) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(24.dp),
-                        color = MaterialTheme.colorScheme.onPrimary
+                        .padding(24.dp)
+                        .verticalScroll(rememberScrollState()),  // ✅ 긴 내용용 스크롤 추가
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "ClosetCast Sign Up",
+                        fontSize = 28.sp,
+                        fontWeight = FontWeight.Bold
                     )
-                } else {
-                    Text(text = "Sign Up", fontSize = 18.sp)
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    // Name 입력
+                    OutlinedTextField(
+                        value = name,
+                        onValueChange = { name = it },
+                        label = { Text("Name") },
+                        modifier = Modifier.fillMaxWidth(),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
+                        singleLine = true,
+                        enabled = !isLoading
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // LoginId 입력
+                    OutlinedTextField(
+                        value = loginId,
+                        onValueChange = { loginId = it },
+                        label = { Text("LoginId") },
+                        modifier = Modifier.fillMaxWidth(),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                        singleLine = true,
+                        enabled = !isLoading
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Password 입력
+                    OutlinedTextField(
+                        value = password,
+                        onValueChange = { password = it },
+                        label = { Text("Password") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                        visualTransformation = PasswordVisualTransformation(),
+                        enabled = !isLoading
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Password Check 입력
+                    OutlinedTextField(
+                        value = passwordCheck,
+                        onValueChange = { passwordCheck = it },
+                        label = { Text("Password Check") },
+                        modifier = Modifier.fillMaxWidth(),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                        singleLine = true,
+                        visualTransformation = PasswordVisualTransformation(),
+                        enabled = !isLoading
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // ✅ 에러 메시지 표시
+                    if (error != null) {
+                        Text(
+                            text = error!!,
+                            color = MaterialTheme.colorScheme.error,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(bottom = 16.dp),
+                            textAlign = TextAlign.Center,
+                            fontSize = 14.sp
+                        )
+                    }
+
+                    // ✅ 회원가입 버튼 - 파란색
+                    Button(
+                        onClick = {
+                            if (name.isNotBlank() &&
+                                loginId.isNotBlank() &&
+                                password.length >= 6 &&
+                                password == passwordCheck
+                            ) {
+                                authViewModel.signUp(
+                                    name = name,
+                                    loginId = loginId,
+                                    password = password,
+                                    preference = emptyList(),
+                                    tendencies = emptyList()
+                                )
+                            } else {
+                                Toast.makeText(
+                                    context,
+                                    "Password must be at least 6 characters and match.",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(50.dp),
+                        enabled = !isLoading &&
+                                name.isNotBlank() &&
+                                loginId.isNotBlank() &&
+                                password.isNotEmpty() &&
+                                passwordCheck.isNotEmpty(),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFF5B7FFF)  // ✅ 파란색 버튼
+                        )
+                    ) {
+                        if (isLoading) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(24.dp),
+                                color = Color.White  // ✅ 로더 흰색
+                            )
+                        } else {
+                            Text(
+                                text = "Sign Up",
+                                fontSize = 18.sp,
+                                color = Color.White  // ✅ 텍스트 흰색
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    TextButton(onClick = { navController.popBackStack() }) {
+                        Text(
+                            "Already have an account? Login",
+                            color = Color(0xFF5B7FFF)  // ✅ 텍스트 파란색
+                        )
+                    }
                 }
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            TextButton(onClick = { navController.popBackStack() }) {
-                Text("Already have an account? Login")
             }
         }
     }
@@ -491,7 +563,7 @@ data class ClothingRecommendation(val outer: String, val top: String, val bottom
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(navController: NavController, authViewModel: AuthViewModel = viewModel()) {
-    Log.d("MainScreen", "authViewModel memberId: ${authViewModel.memberId.value}")  // ← 추가
+    Log.d("MainScreen", "authViewModel memberId: ${authViewModel.memberId.value}")
     val bottomBarNavController = rememberNavController()
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
@@ -528,154 +600,117 @@ fun MainScreen(navController: NavController, authViewModel: AuthViewModel = view
         }
     }
 
-    val drawerItems = listOf(
-        "Edit Password" to "changepassword",
-        "Edit My Closet" to "clothessetting",
-        "Edit Personal Information" to "styleandsensitivity"
-    )
-
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(backgroundBrush)   // ✅ 메인 화면 배경
+            .background(backgroundBrush)
     ) {
-    ModalNavigationDrawer(
-        drawerState = drawerState,
-        drawerContent = {
-            ModalDrawerSheet {
-                Spacer(Modifier.height(12.dp))
-
-                drawerItems.forEach { item ->
-                    NavigationDrawerItem(
-                        label = { Text(item.first) },
-                        selected = false,
-                        onClick = {
-                            scope.launch { drawerState.close() }
-                            navController.navigate(item.second)
-                        }
-                    )
-                }
-
-                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-
-                // ✅ 로그아웃 버튼 - AuthViewModel.logout() 호출
-                NavigationDrawerItem(
-                    label = { Text("Logout") },
-                    selected = false,
-                    onClick = {
-                        authViewModel.logout()
-                        scope.launch { drawerState.close() }
-                        navController.navigate("login") {
-                            popUpTo(navController.graph.findStartDestination().id) {
-                                inclusive = true
-                            }
-                        }
-                    }
-                )
-
-                NavigationDrawerItem(
-                    label = { Text("Account Withdrawal") },
-                    selected = false,
-                    onClick = {
-                        scope.launch { drawerState.close() }
-                        navController.navigate("withdraw")
-                    }
+        ModalNavigationDrawer(
+            drawerState = drawerState,
+            drawerContent = {
+                // ✅ 여기 이 부분만 새로운 사이드바 UI로 교체
+                AppDrawer(
+                    navController = navController,
+                    authViewModel = authViewModel,
+                    drawerState = drawerState,
+                    scope = scope
                 )
             }
-        }
-    ) {
-        Scaffold(
-            topBar = {
-                TopAppBar(
-                    title = {
-                        val navBackStackEntry by bottomBarNavController.currentBackStackEntryAsState()
-                        val currentRoute = navBackStackEntry?.destination?.route
-                        val title = when (currentRoute) {
-                            BottomNavItem.Weather.route -> BottomNavItem.Weather.title
-                            BottomNavItem.Clothing.route -> BottomNavItem.Clothing.title
-                            else -> "ClosetCast"
-                        }
-                        Text(text = title, color = Color.White)
-                    },
-                    navigationIcon = {
-                        IconButton(onClick = {
-                            scope.launch {
-                                drawerState.apply {
-                                    if (isClosed) open() else close()
-                                }
+        ) {
+            // ✅ 이 아래는 원래 코드 그대로 - 절대 수정하지 않음
+            Scaffold(
+                topBar = {
+                    TopAppBar(
+                        title = {
+                            val navBackStackEntry by bottomBarNavController.currentBackStackEntryAsState()
+                            val currentRoute = navBackStackEntry?.destination?.route
+                            val title = when (currentRoute) {
+                                BottomNavItem.Weather.route -> BottomNavItem.Weather.title
+                                BottomNavItem.Clothing.route -> BottomNavItem.Clothing.title
+                                else -> "ClosetCast"
                             }
-                        }) {
-                            Icon(
-                                imageVector = Icons.Default.Menu,
-                                contentDescription = "Menu",
-                                tint = Color.White
+                            Text(text = title, color = Color.White)
+                        },
+                        navigationIcon = {
+                            IconButton(onClick = {
+                                scope.launch {
+                                    drawerState.apply {
+                                        if (isClosed) open() else close()
+                                    }
+                                }
+                            }) {
+                                Icon(
+                                    imageVector = Icons.Default.Menu,
+                                    contentDescription = "Menu",
+                                    tint = Color.White
+                                )
+                            }
+                        },
+                        colors = TopAppBarDefaults.topAppBarColors(
+                            containerColor = Color.Transparent,
+                            titleContentColor = Color.White,
+                            navigationIconContentColor = Color.White
+                        )
+                    )
+                },
+                bottomBar = {
+                    NavigationBar {
+                        val navBackStackEntry by bottomBarNavController.currentBackStackEntryAsState()
+                        val currentDestination = navBackStackEntry?.destination
+                        items.forEach { screen ->
+                            NavigationBarItem(
+                                icon = { Icon(screen.icon, contentDescription = screen.title) },
+                                label = { Text(screen.title) },
+                                selected = currentDestination?.hierarchy?.any { it.route == screen.route } == true,
+                                onClick = {
+                                    bottomBarNavController.navigate(screen.route) {
+                                        popUpTo(bottomBarNavController.graph.findStartDestination().id) {
+                                            saveState = true
+                                        }
+                                        launchSingleTop = true
+                                        restoreState = true
+                                    }
+                                }
                             )
                         }
-                    },
-                    colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = Color.Transparent,
-                        titleContentColor = Color.White,        // 기본 타이틀 색
-                        navigationIconContentColor = Color.White
-                    )
-                )
-            },
-            bottomBar = {
-                NavigationBar {
-                    val navBackStackEntry by bottomBarNavController.currentBackStackEntryAsState()
-                    val currentDestination = navBackStackEntry?.destination
-                    items.forEach { screen ->
-                        NavigationBarItem(
-                            icon = { Icon(screen.icon, contentDescription = screen.title) },
-                            label = { Text(screen.title) },
-                            selected = currentDestination?.hierarchy?.any { it.route == screen.route } == true,
-                            onClick = {
-                                bottomBarNavController.navigate(screen.route) {
-                                    popUpTo(bottomBarNavController.graph.findStartDestination().id) {
-                                        saveState = true
-                                    }
-                                    launchSingleTop = true
-                                    restoreState = true
-                                }
+                    }
+                },
+                containerColor = Color.Transparent,
+                contentColor = MaterialTheme.colorScheme.onBackground
+            ) { innerPadding ->
+                NavHost(
+                    bottomBarNavController,
+                    startDestination = BottomNavItem.Weather.route,
+                    Modifier.padding(innerPadding)
+                ) {
+                    composable(BottomNavItem.Weather.route) {
+                        if (isLoading) {
+                            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                CircularProgressIndicator()
                             }
-                        )
-                    }
-                }
-            },
-            containerColor = Color.Transparent,
-            contentColor = MaterialTheme.colorScheme.onBackground
-        ) { innerPadding ->
-            NavHost(
-                bottomBarNavController,
-                startDestination = BottomNavItem.Weather.route,
-                Modifier.padding(innerPadding)
-            ) {
-                composable(BottomNavItem.Weather.route) {
-                    if (isLoading) {
-                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            CircularProgressIndicator()
-                        }
-                    } else if (errorMessage != null) {
-                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            Text("Error: $errorMessage", color = MaterialTheme.colorScheme.error)
-                        }
-                    } else if (weatherData != null) {
-                        WeatherScreen(weatherData!!)
-                    } else {
-                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            Text("Updating the location...")
+                        } else if (errorMessage != null) {
+                            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                Text("Error: $errorMessage", color = MaterialTheme.colorScheme.error)
+                            }
+                        } else if (weatherData != null) {
+                            WeatherScreen(weatherData!!)
+                        } else {
+                            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                Text("Updating the location...")
+                            }
                         }
                     }
-                }
-                composable(BottomNavItem.Clothing.route) {
-                    if (weatherData != null) {
-                        ClothingRecommendationScreen(
-                            weatherData = weatherData!!,
-                            authViewModel = authViewModel,  // authViewModel 전달
-                            weatherViewModel = weatherViewModel  // weatherViewModel 전달
-                        )
-                    } else {
-                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            Text("Updating the Weather info...")
+                    composable(BottomNavItem.Clothing.route) {
+                        if (weatherData != null) {
+                            ClothingRecommendationScreen(
+                                weatherData = weatherData!!,
+                                authViewModel = authViewModel,
+                                weatherViewModel = weatherViewModel
+                            )
+                        } else {
+                            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                Text("Updating the Weather info...")
+                            }
                         }
                     }
                 }
@@ -683,6 +718,134 @@ fun MainScreen(navController: NavController, authViewModel: AuthViewModel = view
         }
     }
 }
+
+// ✅ 새로운 사이드바 컴포저블 (MainScreen 바깥에 추가)
+@Composable
+fun AppDrawer(
+    navController: NavController,
+    authViewModel: AuthViewModel,
+    drawerState: DrawerState,
+    scope: CoroutineScope
+) {
+    ModalDrawerSheet(
+        modifier = Modifier
+            .fillMaxHeight()
+            .fillMaxWidth(0.75f),
+        drawerContainerColor = Color.White,  // 흰색 배경
+        drawerTonalElevation = 0.dp
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+                .verticalScroll(rememberScrollState())
+        ) {
+            // 메뉴 제목
+            Text(
+                "Menu",
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 24.dp),
+                textAlign = TextAlign.Center
+            )
+
+            // Edit Password
+            DrawerMenuItem(
+                label = "Edit Password",
+                isWarning = false,
+                onClick = {
+                    navController.navigate("changepassword")
+                    scope.launch { drawerState.close() }
+                }
+            )
+            Spacer(Modifier.height(12.dp))
+
+            // Edit My Closet
+            DrawerMenuItem(
+                label = "Edit My Closet",
+                isWarning = false,
+                onClick = {
+                    navController.navigate("clothessetting")
+                    scope.launch { drawerState.close() }
+                }
+            )
+            Spacer(Modifier.height(12.dp))
+
+            // Edit Personal Information
+            DrawerMenuItem(
+                label = "Edit Personal Information",
+                isWarning = false,
+                onClick = {
+                    navController.navigate("styleandsensitivity")
+                    scope.launch { drawerState.close() }
+                }
+            )
+            Spacer(Modifier.height(24.dp))
+
+            // Logout
+            DrawerMenuItem(
+                label = "Logout",
+                isWarning = false,
+                onClick = {
+                    authViewModel.logout()
+                    scope.launch { drawerState.close() }
+                    navController.navigate("login") {
+                        popUpTo(navController.graph.findStartDestination().id) {
+                            inclusive = true
+                        }
+                    }
+                }
+            )
+            Spacer(Modifier.height(12.dp))
+
+            // Account Withdrawal (빨간색)
+            DrawerMenuItem(
+                label = "Account Withdrawal",
+                isWarning = true,
+                onClick = {
+                    scope.launch { drawerState.close() }
+                    navController.navigate("withdraw")
+                }
+            )
+        }
+    }
+}
+
+// ✅ 개별 메뉴 아이템 (MainScreen 바깥에 추가)
+@Composable
+fun DrawerMenuItem(
+    label: String,
+    isWarning: Boolean = false,
+    onClick: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(8.dp))
+            .clickable { onClick() },
+        shape = RoundedCornerShape(8.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = Color(0xFFF0F4FF)  // 연한 파란 배경
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = label,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = if (isWarning) Color(0xFFE63946) else Color.Black,  // 경고는 빨간색
+                textAlign = TextAlign.Center
+            )
+        }
+    }
 }
 
 @Composable
@@ -839,7 +1002,7 @@ fun ApparentTemperatureCard(apparentTemperature: Double) {
 fun ClothingRecommendationCard(
     recommendation: ClothingRecommendation,
     isLoading: Boolean = false,
-    recommendationType: RecommendationType = RecommendationType.TEMPERATURE_BASED,  // ✨ 추가
+    recommendationType: RecommendationType = RecommendationType.TEMPERATURE_BASED,
     onRefreshClick: () -> Unit
 ) {
     Column(
@@ -903,21 +1066,23 @@ fun ClothingRecommendationCard(
             }
         }
 
-        // 기존 의류 추천 카드들 (이전 코드와 동일)
-        Row(
-            horizontalArrangement = Arrangement.SpaceEvenly,
-            modifier = Modifier.fillMaxWidth()
+        // ✅ 의류 추천 카드들 (Row로 원 + 텍스트 가로 배치)
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(20.dp),  // ✅ 항목 간 간격
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
             // Outer Wear Card
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(
-                    text = "Outer",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = Color.White
-                )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(16.dp)  // ✅ 원과 텍스트 사이 간격
+            ) {
                 Box(
                     modifier = Modifier
-                        .size(120.dp)
+                        .size(120.dp)  // ✅ 크기 조정
                         .background(
                             MaterialTheme.colorScheme.secondaryContainer,
                             shape = CircleShape
@@ -934,21 +1099,34 @@ fun ClothingRecommendationCard(
                         )
                     }
                 }
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = recommendation.outer,
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = Color.White
-                )
+
+                Column(
+                    modifier = Modifier.weight(1f),
+                    horizontalAlignment = Alignment.Start
+                ) {
+                    Text(
+                        text = "Outer",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = Color.White,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = recommendation.outer,
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = Color.White,
+                        fontSize = 14.sp
+                    )
+                }
             }
 
             // Top Wear Card
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(
-                    text = "Top",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = Color.White
-                )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
                 Box(
                     modifier = Modifier
                         .size(120.dp)
@@ -968,21 +1146,34 @@ fun ClothingRecommendationCard(
                         )
                     }
                 }
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = recommendation.top,
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = Color.White
-                )
+
+                Column(
+                    modifier = Modifier.weight(1f),
+                    horizontalAlignment = Alignment.Start
+                ) {
+                    Text(
+                        text = "Top",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = Color.White,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = recommendation.top,
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = Color.White,
+                        fontSize = 14.sp
+                    )
+                }
             }
 
             // Bottom Wear Card
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(
-                    text = "Bottom",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = Color.White
-                )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
                 Box(
                     modifier = Modifier
                         .size(120.dp)
@@ -1002,12 +1193,26 @@ fun ClothingRecommendationCard(
                         )
                     }
                 }
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = recommendation.bottom,
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = Color.White
-                )
+
+                Column(
+                    modifier = Modifier.weight(1f),
+                    horizontalAlignment = Alignment.Start
+                ) {
+                    Text(
+                        text = "Bottom",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = Color.White,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = recommendation.bottom,
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = Color.White,
+                        fontSize = 14.sp
+                    )
+                }
             }
         }
 
@@ -1026,6 +1231,8 @@ fun ClothingRecommendationCard(
         }
     }
 }
+
+
 
 fun getImageResourceForClothingName(name: String): Int {
     return when (name.trim().uppercase()) {
@@ -1179,131 +1386,175 @@ fun ChangePasswordScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Edit Password") },
+                title = {
+                    Text(
+                        "Edit Password",
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(
                             Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Previous"
+                            contentDescription = "Previous",
+                            tint = Color.White  // ✅ 아이콘 흰색
                         )
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color.Transparent  // ✅ 투명 배경
+                )
             )
         }
     ) { innerPadding ->
-        Column(
+        // ✅ 파란 그라데이션 배경
+        val backgroundBrush = Brush.verticalGradient(
+            colors = listOf(
+                Color(0xFF7CB5FF),
+                Color(0xFF001ECB)
+            )
+        )
+
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding)
-                .padding(16.dp)
-                .verticalScroll(rememberScrollState()),
-            horizontalAlignment = Alignment.CenterHorizontally
+                .background(backgroundBrush)
+                .padding(innerPadding),
+            contentAlignment = Alignment.Center
         ) {
-            // 에러 메시지
-            if (error != null) {
-                Text(
-                    text = error!!,
-                    color = MaterialTheme.colorScheme.error,
+            // ✅ 흰색 Card 안에 내용
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth(0.9f)
+                    .padding(16.dp),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = Color.White
+                )
+            ) {
+                Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(bottom = 16.dp),
-                    textAlign = TextAlign.Center
-                )
-            }
+                        .padding(24.dp)
+                        .verticalScroll(rememberScrollState()),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    // 에러 메시지
+                    if (error != null) {
+                        Text(
+                            text = error!!,
+                            color = MaterialTheme.colorScheme.error,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(bottom = 16.dp),
+                            textAlign = TextAlign.Center,
+                            fontSize = 14.sp
+                        )
+                    }
 
-            OutlinedTextField(
-                value = oldPassword,
-                onValueChange = { oldPassword = it },
-                label = { Text("Current Password") },
-                visualTransformation = PasswordVisualTransformation(),
-                modifier = Modifier.fillMaxWidth(),
-                enabled = !isLoading,
-                singleLine = true
-            )
+                    OutlinedTextField(
+                        value = oldPassword,
+                        onValueChange = { oldPassword = it },
+                        label = { Text("Current Password") },
+                        visualTransformation = PasswordVisualTransformation(),
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = !isLoading,
+                        singleLine = true
+                    )
 
-            Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
 
-            OutlinedTextField(
-                value = newPassword,
-                onValueChange = { newPassword = it },
-                label = { Text("New Password") },
-                visualTransformation = PasswordVisualTransformation(),
-                modifier = Modifier.fillMaxWidth(),
-                enabled = !isLoading,
-                singleLine = true
-            )
+                    OutlinedTextField(
+                        value = newPassword,
+                        onValueChange = { newPassword = it },
+                        label = { Text("New Password") },
+                        visualTransformation = PasswordVisualTransformation(),
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = !isLoading,
+                        singleLine = true
+                    )
 
-            Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
 
-            OutlinedTextField(
-                value = confirmPassword,
-                onValueChange = { confirmPassword = it },
-                label = { Text("Confirm New Password") },
-                visualTransformation = PasswordVisualTransformation(),
-                modifier = Modifier.fillMaxWidth(),
-                enabled = !isLoading,
-                singleLine = true
-            )
+                    OutlinedTextField(
+                        value = confirmPassword,
+                        onValueChange = { confirmPassword = it },
+                        label = { Text("Confirm New Password") },
+                        visualTransformation = PasswordVisualTransformation(),
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = !isLoading,
+                        singleLine = true
+                    )
 
-            Spacer(modifier = Modifier.height(24.dp))
+                    Spacer(modifier = Modifier.height(24.dp))
 
-            Button(
-                onClick = {
-                    Log.d("ChangePassword", "memberId = $memberId")
-                    when {
-                        oldPassword.isEmpty() ->
-                            Toast.makeText(context, "Enter the current Password", Toast.LENGTH_SHORT).show()
+                    Button(
+                        onClick = {
+                            Log.d("ChangePassword", "memberId = $memberId")
+                            when {
+                                oldPassword.isEmpty() ->
+                                    Toast.makeText(context, "Enter the current Password", Toast.LENGTH_SHORT).show()
 
-                        newPassword.isEmpty() ->
-                            Toast.makeText(context, "Enter the new Password", Toast.LENGTH_SHORT).show()
+                                newPassword.isEmpty() ->
+                                    Toast.makeText(context, "Enter the new Password", Toast.LENGTH_SHORT).show()
 
-                        confirmPassword.isEmpty() ->
-                            Toast.makeText(context, "Enter the confirm Password", Toast.LENGTH_SHORT).show()
+                                confirmPassword.isEmpty() ->
+                                    Toast.makeText(context, "Enter the confirm Password", Toast.LENGTH_SHORT).show()
 
-                        newPassword.length < 6 ->
-                            Toast.makeText(context, "Password must be at least 6 characters", Toast.LENGTH_SHORT).show()
+                                newPassword.length < 6 ->
+                                    Toast.makeText(context, "Password must be at least 6 characters", Toast.LENGTH_SHORT).show()
 
-                        newPassword != confirmPassword ->
-                            Toast.makeText(context, "New Password and Confirm Password do not match", Toast.LENGTH_SHORT).show()
+                                newPassword != confirmPassword ->
+                                    Toast.makeText(context, "New Password and Confirm Password do not match", Toast.LENGTH_SHORT).show()
 
-                        oldPassword == newPassword ->
-                            Toast.makeText(context, "New Password cannot be the same as the current Password", Toast.LENGTH_SHORT).show()
+                                oldPassword == newPassword ->
+                                    Toast.makeText(context, "New Password cannot be the same as the current Password", Toast.LENGTH_SHORT).show()
 
-                        memberId == null ->
-                            Toast.makeText(context, "Cannot fetch member ID", Toast.LENGTH_SHORT).show()
+                                memberId == null ->
+                                    Toast.makeText(context, "Cannot fetch member ID", Toast.LENGTH_SHORT).show()
 
-                        else -> {
-                            // ✅ 실제 서버 비밀번호 업데이트 호출
-                            authViewModel.updateMember(
-                                memberId = memberId!!,
-                                password = oldPassword,
-                                newPassword = newPassword,
-                                preference = null,
-                                tendencies = null,
-                                clothes = null
+                                else -> {
+                                    authViewModel.updateMember(
+                                        memberId = memberId!!,
+                                        password = oldPassword,
+                                        newPassword = newPassword,
+                                        preference = null,
+                                        tendencies = null,
+                                        clothes = null
+                                    )
+                                }
+                            }
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(50.dp),
+                        enabled = !isLoading &&
+                                oldPassword.isNotEmpty() &&
+                                newPassword.isNotEmpty() &&
+                                confirmPassword.isNotEmpty(),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFF5B7FFF)  // ✅ 파란색 버튼
+                        )
+                    ) {
+                        if (isLoading) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(24.dp),
+                                color = Color.White
+                            )
+                        } else {
+                            Text(
+                                "Change Password",
+                                fontSize = 18.sp,
+                                color = Color.White  // ✅ 텍스트 흰색
                             )
                         }
                     }
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(50.dp),
-                enabled = !isLoading &&
-                        oldPassword.isNotEmpty() &&
-                        newPassword.isNotEmpty() &&
-                        confirmPassword.isNotEmpty()
-            ) {
-                if (isLoading) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(24.dp),
-                        color = MaterialTheme.colorScheme.onPrimary
-                    )
-                } else {
-                    Text("Change Password", fontSize = 18.sp)
                 }
             }
         }
     }
+
 }
 
 
@@ -1311,46 +1562,117 @@ fun ChangePasswordScreen(
 @Composable
 fun WithdrawScreen(navController: NavController, authViewModel: AuthViewModel) {
     val context = LocalContext.current
+
+    val backgroundBrush = Brush.verticalGradient(
+        colors = listOf(
+            Color(0xFF7CB5FF),
+            Color(0xFF001ECB)
+        )
+    )
+
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Account Withdrawal") },
+                title = {
+                    Text(
+                        "Account Withdrawal",
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Previous")
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Previous",
+                            tint = Color.White
+                        )
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color.Transparent
+                )
             )
         }
     ) { innerPadding ->
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding)
-                .padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+                .background(backgroundBrush)
+                .padding(innerPadding),
+            contentAlignment = Alignment.Center
         ) {
-            Text("Are you sure you want to withdraw?", fontSize = 20.sp)
-            Spacer(modifier = Modifier.height(24.dp))
-            Button(
-                onClick = {
-                    val memberId = authViewModel.memberId.value
-                    if (memberId == null) {
-                        Toast.makeText(context, "User ID not found", Toast.LENGTH_SHORT).show()
-                    } else {
-                        authViewModel.deleteMember(memberId)
-                        navController.navigate("login") {
-                            popUpTo(0)  // 모든 이전 스택 제거
-                        }
+            // ✅ 흰색 Card
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth(0.85f)
+                    .padding(16.dp),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = Color.White
+                )
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Text(
+                        "Are you sure you want to withdraw your account?",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Text(
+                        "You can't restore your account after withdrawal.",
+                        fontSize = 14.sp,
+                        color = Color(0xFFE63946),  // ✅ 경고 빨간색
+                        textAlign = TextAlign.Center
+                    )
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    // ✅ 빨간색 경고 버튼
+                    Button(
+                        onClick = {
+                            val memberId = authViewModel.memberId.value
+                            if (memberId == null) {
+                                Toast.makeText(
+                                    context,
+                                    "User ID not found",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            } else {
+                                authViewModel.deleteMember(memberId)
+                                navController.navigate("login") {
+                                    popUpTo(0)  // 모든 이전 스택 제거
+                                }
+                            }
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(50.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFFE63946)  // ✅ 빨간색 경고 버튼
+                        )
+                    ) {
+                        Text(
+                            "Account Withdrawal",
+                            fontSize = 16.sp,
+                            color = Color.White
+                        )
                     }
                 }
-            ) {
-                Text("Yes. Delete this Account")
             }
         }
     }
 }
+
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -1422,7 +1744,14 @@ fun StyleAndSensitivityScreen(
     val memberProfile by authViewModel.memberProfile
     val updateSuccess by authViewModel.updateSuccess.collectAsState()
 
-    // ✅ 서버에 저장된 값 (항상 “수정 모드”로 사용)
+    val backgroundBrush = Brush.verticalGradient(
+        colors = listOf(
+            Color(0xFF7CB5FF),
+            Color(0xFF001ECB)
+        )
+    )
+
+    // ✅ 서버에 저장된 값 (항상 "수정 모드"로 사용)
     val savedPreference = memberProfile.preference
     val savedTendencies = memberProfile.tendencies
 
@@ -1462,137 +1791,198 @@ fun StyleAndSensitivityScreen(
                 "Update your personal Information completed.",
                 Toast.LENGTH_SHORT
             ).show()
-            // 필요하면 authViewModel.resetUpdateSuccess() 호출
         }
     }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Edit Personal Information") },
-                navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                    }
-                }
-            )
-        },
-        bottomBar = {
-            Button(
-                onClick = {
-                    val preference = selectedStyles
-                        .map { it.uppercase() }
-                        .ifEmpty { listOf("CASUAL") }
-
-                    val tendencies = buildList {
-                        if (heatSensitive) add("HOT")
-                        if (coldSensitive) add("COLD")
-                    }
-
-                    if (memberId == null) {
-                        Toast.makeText(
-                            context,
-                            "Cannot fetch member info",
-                            Toast.LENGTH_SHORT
-                        ).show()
-                        return@Button
-                    }
-
-                    authViewModel.updateMember(
-                        memberId = memberId!!,
-                        password = null,
-                        newPassword = null,
-                        preference = preference,
-                        tendencies = tendencies,
-                        clothes = null   // 옷 정보는 여기서 안 건드림
+                title = {
+                    Text(
+                        "Edit Personal Information",
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold
                     )
                 },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                enabled = !isLoading
-            ) {
-                if (isLoading) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(24.dp),
-                        color = MaterialTheme.colorScheme.onPrimary
-                    )
-                } else {
-                    Text("Edit Complete")
-                }
-            }
+                navigationIcon = {
+                    IconButton(onClick = { navController.popBackStack() }) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back",
+                            tint = Color.White
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color.Transparent
+                )
+            )
         }
     ) { innerPadding ->
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
+                .background(backgroundBrush)
                 .padding(innerPadding)
-                .padding(horizontal = 16.dp)
-                .verticalScroll(rememberScrollState()),
-            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            if (error != null) {
-                Text(
-                    text = error!!,
-                    color = MaterialTheme.colorScheme.error,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 16.dp),
-                    textAlign = TextAlign.Center
-                )
-            }
-
-            Text(
-                "Choose your style preference",
-                style = MaterialTheme.typography.headlineSmall,
-                modifier = Modifier.padding(vertical = 16.dp)
-            )
-            FlowRow(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly,
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-                maxItemsInEachRow = 2
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp)
+                    .verticalScroll(rememberScrollState()),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                styles.forEach { style ->
-                    StyleSelectionItem(style, selectedStyles.contains(style)) {
-                        if (selectedStyles.contains(style)) {
-                            selectedStyles.remove(style)
-                        } else {
-                            selectedStyles.add(style)
+                // ✅ 에러 메시지
+                if (error != null) {
+                    Text(
+                        text = error!!,
+                        color = Color(0xFFE63946),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 16.dp),
+                        textAlign = TextAlign.Center,
+                        fontSize = 14.sp
+                    )
+                }
+
+                // ✅ 스타일 선택 Card
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth(0.9f)
+                        .padding(8.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color.White)
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            "Choose your style preference",
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(bottom = 16.dp)
+                        )
+
+                        FlowRow(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceEvenly,
+                            verticalArrangement = Arrangement.spacedBy(16.dp),
+                            maxItemsInEachRow = 2
+                        ) {
+                            styles.forEach { style ->
+                                StyleSelectionItem(style, selectedStyles.contains(style)) {
+                                    if (selectedStyles.contains(style)) {
+                                        selectedStyles.remove(style)
+                                    } else {
+                                        selectedStyles.add(style)
+                                    }
+                                }
+                            }
                         }
                     }
                 }
-            }
 
-            Spacer(Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
-            Text(
-                "Your sensitivity tendency",
-                style = MaterialTheme.typography.headlineSmall,
-                textAlign = TextAlign.Center
-            )
-            Spacer(Modifier.height(16.dp))
+                // ✅ 민감도 선택 Card
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth(0.9f)
+                        .padding(8.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color.White)
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            "Choose your sensitivity tendency",
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(bottom = 16.dp)
+                        )
 
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text("Sensitive to Heat", fontSize = 18.sp)
-                Switch(checked = heatSensitive, onCheckedChange = { heatSensitive = it })
-            }
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text("Sensitive to Heat", fontSize = 16.sp)
+                            Switch(checked = heatSensitive, onCheckedChange = { heatSensitive = it })
+                        }
 
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text("Sensitive to Cold", fontSize = 18.sp)
-                Switch(checked = coldSensitive, onCheckedChange = { coldSensitive = it })
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text("Sensitive to Cold", fontSize = 16.sp)
+                            Switch(checked = coldSensitive, onCheckedChange = { coldSensitive = it })
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                // ✅ Done 버튼 - 화면 내부에 포함
+                Button(
+                    onClick = {
+                        val preference = selectedStyles
+                            .map { it.uppercase() }
+                            .ifEmpty { listOf("CASUAL") }
+
+                        val tendencies = buildList {
+                            if (heatSensitive) add("HOT")
+                            if (coldSensitive) add("COLD")
+                        }
+
+                        if (memberId == null) {
+                            Toast.makeText(
+                                context,
+                                "Cannot fetch member info",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                            return@Button
+                        }
+
+                        authViewModel.updateMember(
+                            memberId = memberId!!,
+                            password = null,
+                            newPassword = null,
+                            preference = preference,
+                            tendencies = tendencies,
+                            clothes = null
+                        )
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth(0.8f)
+                        .height(50.dp),
+                    enabled = !isLoading,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFF5B7FFF)  // ✅ 파란색 버튼
+                    )
+                ) {
+                    if (isLoading) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(24.dp),
+                            color = Color.White
+                        )
+                    } else {
+                        Text("Done", fontSize = 18.sp, color = Color.White)
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
             }
         }
     }
@@ -1625,7 +2015,7 @@ fun ClothesSetting(
     val isLoading by authViewModel.isLoading
     val error by authViewModel.error
     val memberId by authViewModel.memberId
-    val memberProfile by authViewModel.memberProfile   // 여기에 clothes 리스트가 들어있다고 가정
+    val memberProfile by authViewModel.memberProfile
 
     // 1) 사용자가 가진 옷 set (서버 포맷 → Set)
     val ownedClothes = remember(memberProfile.clothes) {
@@ -1673,148 +2063,231 @@ fun ClothesSetting(
     LaunchedEffect(Unit) {
         authViewModel.resetError()
     }
+
+    val backgroundBrush = Brush.verticalGradient(
+        colors = listOf(
+            Color(0xFF7CB5FF),
+            Color(0xFF001ECB)
+        )
+    )
+
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Edit My Closet") },
+                title = {
+                    Text(
+                        "Edit My Closet",
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Previous")
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Previous",
+                            tint = Color.White
+                        )
                     }
-                }
-            )
-        },
-        bottomBar = {
-            Button(
-                onClick = {
-                    if (memberId == null) {
-                        Toast.makeText(context, "Cannot fetch the login info.", Toast.LENGTH_SHORT).show()
-                        return@Button
-                    }
-
-                    // ✅ 아우터 제외 각 카테고리별 최소 1개 이상 선택 검증
-                    val selectedTops = tops.count { it.value }
-                    val selectedBottoms = bottoms.count { it.value }
-
-                    if (selectedTops == 0) {
-                        Toast.makeText(context, "Please select top at least 1.", Toast.LENGTH_SHORT).show()
-                        return@Button
-                    }
-                    if (selectedBottoms == 0) {
-                        Toast.makeText(context, "Please select bottom at least 1.", Toast.LENGTH_SHORT).show()
-                        return@Button
-                    }
-
-                    // 모두 통과하면 서버 호출
-                    val rawClothes = mutableListOf<String>()
-                    outerwear.forEach { (name, hasItem) ->
-                        if (hasItem) rawClothes.add(name)
-                    }
-                    tops.forEach { (name, hasItem) ->
-                        if (hasItem) rawClothes.add(name)
-                    }
-                    bottoms.forEach { (name, hasItem) ->
-                        if (hasItem) rawClothes.add(name)
-                    }
-
-                    val selectedClothes = rawClothes.map { name ->
-                        name.trim()
-                            .replace(' ', '_')
-                            .uppercase()
-                    }
-
-                    authViewModel.updateMember(
-                        memberId = memberId!!,
-                        password = null,
-                        newPassword = null,
-                        preference = null,
-                        tendencies = null,
-                        clothes = selectedClothes
-                    )
-                    Toast.makeText(context, "Edit completed.", Toast.LENGTH_SHORT).show()
-                    navController.popBackStack()
                 },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                enabled = !isLoading
-            ) {
-                if (isLoading) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(24.dp),
-                        color = MaterialTheme.colorScheme.onPrimary
-                    )
-                } else {
-                    Text("Edit Complete")
-                }
-            }
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color.Transparent
+                )
+            )
         }
-
     ) { innerPadding ->
-        // ✅ content 쪽에서도 같은 상태 사용
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
+                .background(backgroundBrush)
                 .padding(innerPadding)
-                .padding(16.dp)
-                .verticalScroll(rememberScrollState())
         ) {
-            if (error != null) {
-                Text(
-                    text = when {
-                        error?.contains("Your current Password does not match") == true ->
-                            "Please select at least one item in each category."
-                        else -> error!!
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp)
+                    .verticalScroll(rememberScrollState()),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                // 에러 메시지
+                if (error != null) {
+                    Text(
+                        text = when {
+                            error?.contains("Your current Password does not match") == true ->
+                                "Please select at least one item in each category."
+                            else -> error!!
                         },
-                    color = MaterialTheme.colorScheme.error,
+                        color = Color(0xFFE63946),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 16.dp),
+                        textAlign = TextAlign.Center,
+                        fontSize = 14.sp
+                    )
+                }
+
+                // ✅ 옷 선택 Card
+                Card(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 16.dp),
-                    textAlign = TextAlign.Center
-                )
-            }
+                        .fillMaxWidth(0.9f)
+                        .padding(8.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color.White)
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp)
+                    ) {
+                        // Outer Wear Section
+                        Text(
+                            "Outer Wear",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        outerwear.keys.forEach { item ->
+                            ClothingItem(
+                                name = item,
+                                isSelected = outerwear[item] ?: false,
+                                onToggle = { checked ->
+                                    setOuterwear(outerwear + (item to checked))
+                                }
+                            )
+                        }
 
-            // Outer Wear Section
-            Text("Outer Wear", style = MaterialTheme.typography.headlineSmall)
-            Spacer(modifier = Modifier.height(8.dp))
-            outerwear.keys.forEach { item ->
-                ClothingItem(
-                    name = item,
-                    isSelected = outerwear[item] ?: false,
-                    onToggle = { checked ->
-                        setOuterwear(outerwear + (item to checked))
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        // Top Wear Section
+                        Text(
+                            "Top Wear",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        tops.keys.forEach { item ->
+                            ClothingItem(
+                                name = item,
+                                isSelected = tops[item] ?: false,
+                                onToggle = { checked ->
+                                    setTops(tops + (item to checked))
+                                }
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        // Bottom Wear Section
+                        Text(
+                            "Bottom Wear",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        bottoms.keys.forEach { item ->
+                            ClothingItem(
+                                name = item,
+                                isSelected = bottoms[item] ?: false,
+                                onToggle = { checked ->
+                                    setBottoms(bottoms + (item to checked))
+                                }
+                            )
+                        }
                     }
-                )
-            }
+                }
 
-            Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(24.dp))
 
-            // Top Wear Section
-            Text("Top Wear", style = MaterialTheme.typography.headlineSmall)
-            Spacer(modifier = Modifier.height(8.dp))
-            tops.keys.forEach { item ->
-                ClothingItem(
-                    name = item,
-                    isSelected = tops[item] ?: false,
-                    onToggle = { checked ->
-                        setTops(tops + (item to checked))
+                // ✅ Edit Complete 버튼 (bottomBar 대신 내부에 배치)
+                Button(
+                    onClick = {
+                        if (memberId == null) {
+                            Toast.makeText(
+                                context,
+                                "Cannot fetch the login info.",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                            return@Button
+                        }
+
+                        // 각 카테고리별 최소 1개 이상 선택 검증
+                        val selectedOuter = outerwear.count { it.value }
+                        val selectedTops = tops.count { it.value }
+                        val selectedBottoms = bottoms.count { it.value }
+
+                        if (selectedOuter == 0) {
+                            Toast.makeText(
+                                context,
+                                "Please select outer wear at least 1.",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                            return@Button
+                        }
+                        if (selectedTops == 0) {
+                            Toast.makeText(
+                                context,
+                                "Please select top at least 1.",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                            return@Button
+                        }
+                        if (selectedBottoms == 0) {
+                            Toast.makeText(
+                                context,
+                                "Please select bottom at least 1.",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                            return@Button
+                        }
+
+                        // 서버로 보낼 리스트 생성
+                        val rawClothes = mutableListOf<String>()
+                        outerwear.forEach { (name, hasItem) ->
+                            if (hasItem) rawClothes.add(name)
+                        }
+                        tops.forEach { (name, hasItem) ->
+                            if (hasItem) rawClothes.add(name)
+                        }
+                        bottoms.forEach { (name, hasItem) ->
+                            if (hasItem) rawClothes.add(name)
+                        }
+
+                        val selectedClothes = rawClothes.map { name ->
+                            name.trim()
+                                .replace(' ', '_')
+                                .uppercase()
+                        }
+
+                        authViewModel.updateMember(
+                            memberId = memberId!!,
+                            password = null,
+                            newPassword = null,
+                            preference = null,
+                            tendencies = null,
+                            clothes = selectedClothes
+                        )
+                        Toast.makeText(context, "Edit completed.", Toast.LENGTH_SHORT).show()
+                        navController.popBackStack()
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth(0.8f)
+                        .height(50.dp),
+                    enabled = !isLoading,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFF5B7FFF)
+                    )
+                ) {
+                    if (isLoading) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(24.dp),
+                            color = Color.White
+                        )
+                    } else {
+                        Text("Edit Complete", fontSize = 18.sp, color = Color.White)
                     }
-                )
-            }
+                }
 
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Bottom Wear Section
-            Text("Bottom Wear", style = MaterialTheme.typography.headlineSmall)
-            Spacer(modifier = Modifier.height(8.dp))
-            bottoms.keys.forEach { item ->
-                ClothingItem(
-                    name = item,
-                    isSelected = bottoms[item] ?: false,
-                    onToggle = { checked ->
-                        setBottoms(bottoms + (item to checked))
-                    }
-                )
+                Spacer(modifier = Modifier.height(24.dp))
             }
         }
     }
