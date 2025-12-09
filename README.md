@@ -56,7 +56,7 @@ API 명세는 Swagger를 통해 관리되고 있습니다.
 
 ## 🚀 Getting Started
 
-### 1. Clone the repository
+### Clone the repository
 ```bash
 git clone [https://github.com/WY-C/ClosetCast.git](https://github.com/WY-C/ClosetCast.git)
 cd ClosetCast
