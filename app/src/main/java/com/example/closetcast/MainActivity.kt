@@ -48,10 +48,12 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.example.closetcast.ui.theme.ClosetCastTheme
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -156,17 +158,37 @@ fun AppNavigation(authViewModel: AuthViewModel) {
         }
 
         // ✅ 스타일 & 민감도: 항상 프로필 수정용 (회원가입 인자 제거)
-        composable("styleandsensitivity") {
+        composable(
+            route = "styleandsensitivity?from={from}",
+            arguments = listOf(
+                navArgument("from") {
+                    type = NavType.StringType
+                    defaultValue = "profile"  // 기본값: 프로필 편집
+                }
+            )
+        ) { backStackEntry ->
+            val fromSource = backStackEntry.arguments?.getString("from") ?: "profile"
             StyleAndSensitivityScreen(
                 navController = navController,
-                authViewModel = authViewModel
+                authViewModel = authViewModel,
+                from = fromSource  // argument 전달
             )
         }
 
-        composable("clothessetting") {
+        composable(
+            route = "clothessetting?from={from}",
+            arguments = listOf(
+                navArgument("from") {
+                    type = NavType.StringType
+                    defaultValue = "profile"  // 기본값: 프로필 편집
+                }
+            )
+        ) { backStackEntry ->
+            val fromSource = backStackEntry.arguments?.getString("from") ?: "profile"
             ClothesSetting(
                 navController = navController,
-                authViewModel = authViewModel
+                authViewModel = authViewModel,
+                from = fromSource  // argument 전달
             )
         }
 
@@ -345,9 +367,12 @@ fun SignUpScreen(navController: NavController, authViewModel: AuthViewModel = vi
 
     LaunchedEffect(signUpSuccess) {
         if (signUpSuccess) {
-            Toast.makeText(context, "SignUp Success. Please Set your style preference and Sensitivity.", Toast.LENGTH_SHORT).show()
-            // ✅ 회원가입 성공 → 스타일/민감도 설정 화면으로
-            navController.navigate("styleandsensitivity") {
+            Toast.makeText(
+                context,
+                "SignUp Success. Please Set your style preference and Sensitivity.",
+                Toast.LENGTH_SHORT
+            ).show()
+            navController.navigate("styleandsensitivity?from=signup") {
                 popUpTo("signup") { inclusive = true }
             }
         }
@@ -778,7 +803,7 @@ fun AppDrawer(
                 label = "Edit Personal Information",
                 isWarning = false,
                 onClick = {
-                    navController.navigate("styleandsensitivity")
+                    navController.navigate("styleandsensitivity?from=profile")  // 명시적으로 profile 지정
                     scope.launch { drawerState.close() }
                 }
             )
@@ -1733,8 +1758,9 @@ fun getStyleImageResource(style: String): Int {
 @Composable
 fun StyleAndSensitivityScreen(
     navController: NavController,
-    authViewModel: AuthViewModel
-) {
+    authViewModel: AuthViewModel,
+    from: String = "profile"  // argument 받기
+)  {
     val styles = listOf("Minimal", "Casual", "Street", "Classic", "Dandy", "Retro")
 
     val context = LocalContext.current
@@ -1783,14 +1809,26 @@ fun StyleAndSensitivityScreen(
     // ✅ 수정 성공 시에만 메인으로 이동
     LaunchedEffect(updateSuccess) {
         if (updateSuccess) {
-            navController.navigate("main") {
-                popUpTo("main") { inclusive = true }
+            // ✅ from argument에 따라 분기
+            if (from == "signup") {
+                // 회원가입 플로우: 옷장 설정으로 이동
+                navController.navigate("clothessetting?from=signup") {
+                    popUpTo("styleandsensitivity") { inclusive = true }
+                }
+                Toast.makeText(
+                    context,
+                    "Style preference and sensitivity set. Now select your clothes.",
+                    Toast.LENGTH_SHORT
+                ).show()
+            } else {
+                // 프로필 수정: 이전 화면으로 돌아가기
+                Toast.makeText(
+                    context,
+                    "Update your personal Information completed.",
+                    Toast.LENGTH_SHORT
+                ).show()
+                navController.popBackStack()
             }
-            Toast.makeText(
-                context,
-                "Update your personal Information completed.",
-                Toast.LENGTH_SHORT
-            ).show()
         }
     }
 
@@ -2009,7 +2047,8 @@ fun ClothingItem(name: String, isSelected: Boolean, onToggle: (Boolean) -> Unit)
 @Composable
 fun ClothesSetting(
     navController: NavController,
-    authViewModel: AuthViewModel
+    authViewModel: AuthViewModel,
+    from: String = "profile"  // argument 받기
 ) {
     val context = LocalContext.current
     val isLoading by authViewModel.isLoading
@@ -2266,8 +2305,19 @@ fun ClothesSetting(
                             tendencies = null,
                             clothes = selectedClothes
                         )
-                        Toast.makeText(context, "Edit completed.", Toast.LENGTH_SHORT).show()
-                        navController.popBackStack()
+
+                        // ✅ from argument에 따라 분기
+                        if (from == "signup") {
+                            // 회원가입 플로우: 메인 화면으로 이동 (회원가입 스택 비우기)
+                            Toast.makeText(context, "Sign up completed.", Toast.LENGTH_SHORT).show()
+                            navController.navigate("main") {
+                                popUpTo("login") { inclusive = true }  // 로그인부터 회원가입까지 모두 제거
+                            }
+                        } else {
+                            // 프로필 수정: 이전 화면으로 돌아가기
+                            Toast.makeText(context, "Edit completed.", Toast.LENGTH_SHORT).show()
+                            navController.popBackStack()
+                        }
                     },
                     modifier = Modifier
                         .fillMaxWidth(0.8f)
